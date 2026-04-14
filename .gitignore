@@ -1,0 +1,49 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# Large artifacts
+*.pt
+*.pth
+*.bin
+*.model
+*.wav
+*.mp3
+*.mid
+*.midi
+
+# Ignore root data folder if it contains processed samples (optional, but good practice for GitHub)
+# data/processed/
+
+# Allow some small sample data
+!data/samples/

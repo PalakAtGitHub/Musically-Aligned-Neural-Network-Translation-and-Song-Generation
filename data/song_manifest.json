@@ -1,0 +1,188 @@
+{
+    "songs": [
+        {
+            "name": "Baa Baa Black Sheep",
+            "midi_file": "baa-baa-black-sheep-lead-sheet-with-lyrics.mid",
+            "notes_per_line": 8,
+            "lines": [
+                {
+                    "english": "Baa baa black sheep have you any wool",
+                    "hindi": "बा बा काली भेड़ ऊन है"
+                },
+                {
+                    "english": "Yes sir yes sir three bags full",
+                    "hindi": "हाँ जी हाँ जी तीन थैले"
+                },
+                {
+                    "english": "One for the master one for the dame",
+                    "hindi": "एक मालिक को एक रानी को"
+                },
+                {
+                    "english": "One for the little boy who lives down the lane",
+                    "hindi": "एक छोटे बालक गली वाले को"
+                }
+            ]
+        },
+        {
+            "name": "Mary Had A Little Lamb",
+            "midi_file": "mary-had-a-little-lamb-lead-sheet-with-lyrics.mid",
+            "notes_per_line": 8,
+            "lines": [
+                {
+                    "english": "Mary had a little lamb",
+                    "hindi": "मैरी का छोटा मेमना"
+                },
+                {
+                    "english": "Little lamb little lamb",
+                    "hindi": "छोटा मेमना प्यारा सा"
+                },
+                {
+                    "english": "Mary had a little lamb",
+                    "hindi": "मैरी का छोटा मेमना"
+                },
+                {
+                    "english": "Its fleece was white as snow",
+                    "hindi": "ऊन उसका बर्फ सा गोरा"
+                }
+            ]
+        },
+        {
+            "name": "Christmas Tree",
+            "midi_file": "christmas-tree-lead-sheet-with-lyrics.mid",
+            "notes_per_line": 12,
+            "lines": [
+                {
+                    "english": "O Christmas tree O Christmas tree",
+                    "hindi": "ओ देवदार ओ सुंदर पेड़"
+                },
+                {
+                    "english": "How lovely are thy branches",
+                    "hindi": "कितनी प्यारी डालियाँ तेरी"
+                },
+                {
+                    "english": "O Christmas tree O Christmas tree",
+                    "hindi": "ओ देवदार ओ सुंदर पेड़"
+                },
+                {
+                    "english": "How lovely are thy branches",
+                    "hindi": "कितनी प्यारी डालियाँ तेरी"
+                }
+            ]
+        },
+        {
+            "name": "She'll Be Comin Round The Mountain",
+            "midi_file": "shell-be-comin-round-the-mountain-lead-sheet-with-lyrics.mid",
+            "notes_per_line": 8,
+            "lines": [
+                {
+                    "english": "She'll be comin round the mountain when she comes",
+                    "hindi": "वो पहाड़ से आएगी जब"
+                },
+                {
+                    "english": "She'll be comin round the mountain when she comes",
+                    "hindi": "वो पहाड़ से आएगी जब"
+                },
+                {
+                    "english": "She'll be driving six white horses",
+                    "hindi": "छह सफेद घोड़े लाएगी"
+                },
+                {
+                    "english": "She'll be comin round the mountain when she comes",
+                    "hindi": "वो पहाड़ से आएगी जब"
+                }
+            ]
+        },
+        {
+            "name": "Jingle Bell Rock",
+            "midi_file": "jingle-bell-rock-lead-sheet-with-lyrics.mid",
+            "notes_per_line": 8,
+            "lines": [
+                {
+                    "english": "Jingle bell jingle bell jingle bell rock",
+                    "hindi": "घंटी बजे घंटी बजे रॉक"
+                },
+                {
+                    "english": "Jingle bells swing and jingle bells ring",
+                    "hindi": "घंटी झूले और घंटी बजे"
+                },
+                {
+                    "english": "Snowing and blowing up bushels of fun",
+                    "hindi": "बर्फ गिरे मस्ती का मौसम"
+                },
+                {
+                    "english": "Now the jingle hop has begun",
+                    "hindi": "अब घंटी नाच शुरू हुआ"
+                }
+            ]
+        },
+        {
+            "name": "What Child Is This",
+            "midi_file": "what-child-is-this-lead-sheet-with-verses-and-lyrics.mid",
+            "notes_per_line": 8,
+            "lines": [
+                {
+                    "english": "What child is this who laid to rest",
+                    "hindi": "ये कौन बालक सोया है"
+                },
+                {
+                    "english": "On Mary's lap is sleeping",
+                    "hindi": "मैरी की गोद में सोता"
+                },
+                {
+                    "english": "Whom angels greet with anthems sweet",
+                    "hindi": "देवदूत गाते मीठे गीत"
+                },
+                {
+                    "english": "While shepherds watch are keeping",
+                    "hindi": "चरवाहे पहरा देते हैं"
+                }
+            ]
+        },
+        {
+            "name": "Memories Of You",
+            "midi_file": "memories-of-you-lead-sheet-with-lyrics.mid",
+            "notes_per_line": 8,
+            "lines": [
+                {
+                    "english": "Waking skies at sunrise",
+                    "hindi": "जागे आसमान सुबह में"
+                },
+                {
+                    "english": "Every sunset too",
+                    "hindi": "हर शाम ढलती भी"
+                },
+                {
+                    "english": "Seems to be bringing me",
+                    "hindi": "लगता है लाते हैं मुझे"
+                },
+                {
+                    "english": "Memories of you",
+                    "hindi": "तेरी सारी यादें"
+                }
+            ]
+        },
+        {
+            "name": "If I Had You",
+            "midi_file": "if-i-had-you-lead-sheet-with-lyrics.mid",
+            "notes_per_line": 8,
+            "lines": [
+                {
+                    "english": "If I had you",
+                    "hindi": "अगर तुम होते पास"
+                },
+                {
+                    "english": "I could leave the world behind",
+                    "hindi": "छोड़ देता ये जहान मैं"
+                },
+                {
+                    "english": "Nothing else would matter",
+                    "hindi": "कुछ और मायने न रखता"
+                },
+                {
+                    "english": "If I had you",
+                    "hindi": "अगर तुम होते पास"
+                }
+            ]
+        }
+    ]
+}
