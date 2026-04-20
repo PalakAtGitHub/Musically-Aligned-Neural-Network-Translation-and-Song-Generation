@@ -20,10 +20,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
 
-from src.models.heirarchical_melody_encoder import HierarchicalMelodyEncoder
+from src.models.hierarchical_melody_encoder import HierarchicalMelodyEncoder
 from src.models.fusion import CrossModalFusion
 from src.training.loss import PentathlonLoss
 from src.utils.syllable_utils import count_hindi_syllables
+from src.utils.phoneme_utils import rhyme_similarity
 
 
 class MCNST(nn.Module):
@@ -177,21 +178,23 @@ class MCNST(nn.Module):
                 labels=labels,
                 return_dict=True
             )
-            
+
             translation_loss = outputs.loss
-            
-            # Syllable loss (using ground truth syllable counts)
+            logits = outputs.logits  # [batch, seq_len, vocab]
+
+            # Pass all available signals to PentathlonLoss
+            loss_kwargs = dict(
+                translation_loss=translation_loss,
+                logits=logits,
+                labels=labels,
+                melody_features=melody_features,
+            )
             if num_notes is not None and tgt_syllables is not None:
-                total_loss, loss_dict = self.loss_fn(
-                    translation_loss=translation_loss,
-                    predicted_syllables=tgt_syllables.float(),
-                    target_syllables=num_notes.float()
-                )
-            else:
-                total_loss, loss_dict = self.loss_fn(
-                    translation_loss=translation_loss
-                )
-            
+                loss_kwargs['predicted_syllables'] = tgt_syllables.float()
+                loss_kwargs['target_syllables'] = num_notes.float()
+
+            total_loss, loss_dict = self.loss_fn(**loss_kwargs)
+
             return total_loss, loss_dict
         else:
             # === INFERENCE MODE (get logits) ===
@@ -205,26 +208,94 @@ class MCNST(nn.Module):
     # INFERENCE — Option A: Standard Generation
     # ================================================================
     
-    def generate(self, input_ids, melody_features, **generation_kwargs):
+    def generate(self, input_ids, melody_features,
+                 use_diverse_beam=False, **generation_kwargs):
         """
-        Standard melody-fused generation.
-        
+        Standard melody-fused generation with quality defaults.
+
         English → encode → fuse with melody → decode Hindi
-        
-        This is a single-pass approach. For constrained generation,
-        use generate_constrained() instead.
+
+        Args:
+            use_diverse_beam: If True, uses diverse beam search with
+                              num_beam_groups and diversity_penalty.
         """
+        # Quality defaults (caller can override)
+        generation_kwargs.setdefault('repetition_penalty', 2.5)
+        generation_kwargs.setdefault('no_repeat_ngram_size', 2)
+
+        if use_diverse_beam:
+            num_beams = generation_kwargs.get('num_beams', 6)
+            # Ensure num_beams is divisible by num_beam_groups
+            generation_kwargs.setdefault('num_beam_groups', min(3, num_beams))
+            generation_kwargs.setdefault('diversity_penalty', 1.0)
+            generation_kwargs['num_beams'] = num_beams
+
         encoder_outputs, attention_mask, _ = self._encode_and_fuse(
             input_ids, melody_features
         )
-        
+
         generated = self.mbart.generate(
             encoder_outputs=encoder_outputs,
             attention_mask=attention_mask,
             **generation_kwargs
         )
-        
+
         return generated
+
+    def generate_best_candidate(self, input_ids, melody_features,
+                                num_candidates=6, **generation_kwargs):
+        """
+        Generate diverse candidates and rerank by self-perplexity.
+
+        Uses diverse beam search to produce num_candidates translations,
+        then scores each with the decoder's own cross-entropy and returns
+        the lowest-perplexity candidate.
+
+        Returns:
+            (best_ids, all_candidates_ids)
+        """
+        gen_kwargs = dict(generation_kwargs)
+        gen_kwargs['num_beams'] = num_candidates
+        gen_kwargs['num_return_sequences'] = num_candidates
+        gen_kwargs.setdefault('repetition_penalty', 2.5)
+        gen_kwargs.setdefault('no_repeat_ngram_size', 2)
+        gen_kwargs.setdefault('num_beam_groups', min(3, num_candidates))
+        gen_kwargs.setdefault('diversity_penalty', 1.0)
+
+        encoder_outputs, attention_mask, _ = self._encode_and_fuse(
+            input_ids, melody_features
+        )
+
+        all_ids = self.mbart.generate(
+            encoder_outputs=encoder_outputs,
+            attention_mask=attention_mask,
+            **gen_kwargs
+        )  # [num_candidates, seq_len]
+
+        # Score each candidate by decoder NLL
+        best_score = float('inf')
+        best_idx = 0
+
+        # Expand encoder outputs to match candidates
+        enc_hidden = encoder_outputs.last_hidden_state  # [1, src_len, dim]
+
+        with torch.no_grad():
+            for i in range(all_ids.size(0)):
+                cand = all_ids[i].unsqueeze(0)  # [1, tgt_len]
+                outputs = self.mbart(
+                    encoder_outputs=type(encoder_outputs)(
+                        last_hidden_state=enc_hidden
+                    ),
+                    attention_mask=attention_mask,
+                    labels=cand,
+                    return_dict=True
+                )
+                nll = outputs.loss.item()
+                if nll < best_score:
+                    best_score = nll
+                    best_idx = i
+
+        return all_ids[best_idx].unsqueeze(0), all_ids
     
     # ================================================================
     # INFERENCE — Option B: Two-Stage Generation
@@ -269,18 +340,22 @@ class MCNST(nn.Module):
     # ================================================================
     
     def generate_constrained(self, input_ids, melody_features,
-                              target_syllables, num_beams=5, **kwargs):
+                              target_syllables, num_beams=5,
+                              target_rhyme=None, rhyme_weight=2.0, **kwargs):
         """
-        Generation with syllable constraints.
+        Generation with syllable constraints and optional rhyme guidance.
         
         Uses SyllableConstrainedBeamSearch to enforce that generated
         Hindi text has the right number of syllables for the melody.
+        If target_rhyme is provided, boosts beams that rhyme with it.
         
         Args:
             input_ids:         [1, src_len] — tokenized English
             melody_features:   [1, num_notes, 5]
             target_syllables:  int — number of syllables required
             num_beams:         beam width
+            target_rhyme:      str — target rhyme ending or text to rhyme with
+            rhyme_weight:      float — score multiplier for rhyme
         
         Returns:
             (token_ids, syllable_count)
@@ -293,7 +368,9 @@ class MCNST(nn.Module):
             input_ids=input_ids,
             melody_features=melody_features,
             target_syllables=target_syllables,
-            num_beams=num_beams
+            num_beams=num_beams,
+            target_rhyme=target_rhyme,
+            rhyme_weight=rhyme_weight
         )
 
 
@@ -317,7 +394,7 @@ class SyllableConstrainedBeamSearch:
         self.tokenizer = tokenizer
         self.max_deviation = max_syllable_deviation
     
-    def generate(self, input_ids, melody_features, target_syllables, num_beams=5):
+    def generate(self, input_ids, melody_features, target_syllables, num_beams=5, target_rhyme=None, rhyme_weight=2.0):
         """
         Args:
             input_ids:         [1, src_len] — tokenized English (batch=1)
@@ -395,14 +472,20 @@ class SyllableConstrainedBeamSearch:
                     if new_syl_count > target_syllables + self.max_deviation:
                         continue  # prune
                     
+                    extra_score = 0.0
                     # CONSTRAINT: Only allow EOS if near target
                     if token_id_int == eos_id:
                         if abs(new_syl_count - target_syllables) > self.max_deviation:
                             continue  # don't end yet
+                        
+                        # RHYME CONSTRAINT: Boost score if it rhymes well
+                        if target_rhyme is not None:
+                            similarity = rhyme_similarity(decoded_text, target_rhyme)
+                            extra_score = similarity * rhyme_weight
                     
                     candidates.append({
                         'tokens': new_tokens,
-                        'score': beam['score'] + torch.log(prob).item(),
+                        'score': beam['score'] + torch.log(prob).item() + extra_score,
                         'syllable_count': new_syl_count
                     })
             

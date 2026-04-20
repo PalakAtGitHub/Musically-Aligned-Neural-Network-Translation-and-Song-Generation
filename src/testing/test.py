@@ -11,7 +11,7 @@ import torch
 from transformers import MBart50TokenizerFast
 from src.models.mcnst_model import MCNST
 from src.utils.syllable_utils import count_hindi_syllables, count_english_syllables
-from data.midi_loader import MIDILoader
+from src.data.midi_loader import MIDILoader
 
 
 def load_trained_model(checkpoint_path="checkpoints/best_model.pt"):
@@ -20,8 +20,12 @@ def load_trained_model(checkpoint_path="checkpoints/best_model.pt"):
     
     model = MCNST(freeze_encoder=True, freeze_decoder_layers=10)
     
-    checkpoint = torch.load(checkpoint_path, map_location='cpu')
-    model.load_state_dict(checkpoint['model_state_dict'])
+    checkpoint = torch.load(checkpoint_path, map_location='cpu', weights_only=False)
+    # Handle old checkpoints that may have renamed loss parameters
+    state = checkpoint['model_state_dict']
+    if 'loss_fn.log_var_singability' in state and 'loss_fn.log_var_naturalness' not in state:
+        state['loss_fn.log_var_naturalness'] = state.pop('loss_fn.log_var_singability')
+    model.load_state_dict(state, strict=False)
     model.eval()
     
     print("✓ Model loaded successfully!")
@@ -35,7 +39,7 @@ def test_on_examples(model, num_examples=5):
         "facebook/mbart-large-50-many-to-many-mmt"
     )
     
-    data = torch.load("data/processed/training_data.pt")
+    data = torch.load("src/data/processed/fma_train_data.pt", weights_only=False)
     
     print(f"\n{'='*80}")
     print(f"Testing on {min(num_examples, len(data))} examples")
@@ -173,7 +177,7 @@ if __name__ == "__main__":
     test_on_examples(model, num_examples=5)
     
     # Test on unseen song (Standard + Constrained)
-    test_midi = "data/raw_midis/you-are-the-sunshine-of-my-life-lead-sheet-with-lyrics.mid"
+    test_midi = "src/data/raw_midis/you-are-the-sunshine-of-my-life-lead-sheet-with-lyrics.mid"
     if Path(test_midi).exists():
         test_new_song(
             model,

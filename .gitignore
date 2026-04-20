@@ -47,3 +47,13 @@ env/
 
 # Allow some small sample data
 !data/samples/
+
+# macOS
+.DS_Store
+
+# Generated/Temporary directories
+checkpoints/
+logs/
+fma_medium/
+src/audio/
+src/data/processed/fma_progress.json

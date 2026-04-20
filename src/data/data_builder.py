@@ -16,8 +16,8 @@ class DatasetBuilder:
     """
     
     def __init__(self, 
-                 raw_midi_dir="data/raw_midis",
-                 processed_dir="data/processed"):
+                 raw_midi_dir="src/data/raw_midis",
+                 processed_dir="src/data/processed"):
         
         self.raw_midi_dir = Path(raw_midi_dir)
         self.processed_dir = Path(processed_dir)
@@ -33,57 +33,17 @@ class DatasetBuilder:
         from src.utils.syllable_utils import count_english_syllables, count_hindi_syllables
         self.count_en_syl = count_english_syllables
         self.count_hi_syl = count_hindi_syllables
+        
+        # Initialize MIDI loader
+        from src.data.midi_loader import MIDILoader
+        self.midi_loader = MIDILoader()
     
     def extract_melody_features(self, midi_path: Path, num_lyric_lines: int = 4) -> np.ndarray:
         """
-        Extract melody features from MIDI file.
-        Only extracts ~1 verse worth of notes to match the lyric lines provided.
-        
-        Args:
-            midi_path: Path to MIDI file
-            num_lyric_lines: Number of lyric lines (used to estimate verse length)
-        
-        Returns: [num_notes, 5] array
+        DEPRECATED: Use self.midi_loader.extract_melody_features instead
+        Wrapper kept for compatibility if needed, but logic delegates to MIDILoader
         """
-        try:
-            score = converter.parse(str(midi_path))
-            
-            # Get notes from first part (melody line)
-            notes = score.flatten().notes
-            
-            # Extract all single notes (skip chords)
-            all_features = []
-            for note in notes:
-                if note.isNote:
-                    all_features.append([
-                        note.pitch.midi,          # MIDI pitch (60 = C4)
-                        note.pitch.midi % 12,     # Pitch class
-                        note.duration.quarterLength,  # Duration
-                        1 if note.duration.quarterLength >= 1.0 else 0,  # Duration bin
-                        note.beatStrength         # Beat strength
-                    ])
-            
-            if len(all_features) == 0:
-                print(f"  ⚠️  No single notes found in {midi_path}")
-                return None
-            
-            # Estimate how many notes belong to one verse:
-            # Typical songs have ~6-10 notes per lyric line.
-            # If the MIDI has way more notes than expected, it likely
-            # contains multiple verses/repeats — only take the first portion.
-            estimated_notes_per_line = 8  # reasonable average
-            estimated_verse_notes = num_lyric_lines * estimated_notes_per_line
-            
-            if len(all_features) > estimated_verse_notes * 2:
-                # Likely multi-verse MIDI — only take first verse worth
-                all_features = all_features[:estimated_verse_notes]
-                print(f"  ℹ️  Trimmed to first ~{estimated_verse_notes} notes (from {len(all_features) + estimated_verse_notes} total)")
-            
-            return np.array(all_features, dtype=np.float32)
-        
-        except Exception as e:
-            print(f"Error processing {midi_path}: {e}")
-            return None
+        return self.midi_loader.extract_melody_features(midi_path, num_lyric_lines)
     
     def create_training_example(self, 
                                 english_text: str,
@@ -186,10 +146,11 @@ class DatasetBuilder:
                 continue
             
             print(f"  ✓ Extracted {len(melody_features)} notes")
-            
+
             # Segment melody across lyric lines
+            # Use notes_per_line from manifest if available, otherwise compute evenly
             num_lines_total = len(song_data['lines'])
-            notes_per_line = len(melody_features) // max(num_lines_total, 1)
+            notes_per_line = song_data.get('notes_per_line', len(melody_features) // max(num_lines_total, 1))
             
             # Process each line with its corresponding melody segment
             num_lines = 0
@@ -255,4 +216,4 @@ if __name__ == "__main__":
     builder = DatasetBuilder()
     
     # You'll create this manifest file next
-    dataset = builder.build_dataset_from_manifest("data/song_manifest.json")
+    dataset = builder.build_dataset_from_manifest("src/data/song_manifest.json")

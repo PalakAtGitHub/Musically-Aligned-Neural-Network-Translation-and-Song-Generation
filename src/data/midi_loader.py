@@ -105,7 +105,7 @@ if __name__ == "__main__":
     loader = MIDILoader()
     
     # Test on a sample file
-    test_file = "data/raw_midis/twinkle_twinkle.mid"
+    test_file = "src/data/raw_midis/twinkle_twinkle.mid"
     
     if Path(test_file).exists():
         features = loader.extract_melody_features(test_file)

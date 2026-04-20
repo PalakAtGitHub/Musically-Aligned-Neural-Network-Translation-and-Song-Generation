@@ -17,7 +17,7 @@ class SongTranslationDataset(Dataset):
         Args:
             data_path: Path to .pt file created by DatasetBuilder
         """
-        self.data = torch.load(data_path)
+        self.data = torch.load(data_path, weights_only=False)
         print(f"Loaded {len(self.data)} examples from {data_path}")
     
     def __len__(self):
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     from torch.utils.data import DataLoader
     
     # Load dataset
-    dataset = SongTranslationDataset("data/processed/training_data.pt")
+    dataset = SongTranslationDataset("src/data/processed/training_data.pt")
     
     # Create dataloader
     dataloader = DataLoader(

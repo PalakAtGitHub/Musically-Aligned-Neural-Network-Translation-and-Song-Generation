@@ -2,6 +2,12 @@
 
 An end-to-end neural song translation pipeline designed to convert English songs into Hindi while preserving the original melody, rhythm, and singer's timbre.
 
+## System Environment & Scope
+
+> **This directory (`musically-aligned-translation/`) is the sole source of truth for the entire MCNST pipeline.**
+>
+> All model code, training scripts, evaluation metrics, data pipelines, and audio processing utilities live here. Do not reference, modify, or rely on code in any other directory (e.g. `Song-Translation/`) unless explicitly instructed.
+
 ## 🎵 Project Vision
 
 This project is grounded in **Cognitive Neuroscience** (Shared Syntactic Integration Resource Hypothesis) and **Professional Translation Theory** (Peter Low's Pentathlon Principle). It aims to bridge the gap between simple text translation and singable, musically-aligned song adaptation.

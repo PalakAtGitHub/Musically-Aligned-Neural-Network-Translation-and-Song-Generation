@@ -202,7 +202,7 @@ if __name__ == "__main__":
         audio_file = sys.argv[1]
     else:
         # Try to find separated vocals
-        separated_dir = Path("data/separated")
+        separated_dir = Path("src/data/separated")
         if separated_dir.exists():
             vocal_files = list(separated_dir.glob("*/vocals.wav"))
             if vocal_files:

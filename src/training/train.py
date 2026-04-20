@@ -9,7 +9,7 @@ from pathlib import Path
 import json
 from tqdm import tqdm
 
-from data.song_dataset import SongTranslationDataset
+from src.data.song_dataset import SongTranslationDataset
 from src.models.mcnst_model import MCNST
 
 
@@ -20,7 +20,8 @@ class Trainer:
                  batch_size: int = 4,
                  learning_rate: float = 5e-5,
                  num_epochs: int = 10,
-                 use_cpu_mode: bool = True):
+                 use_cpu_mode: bool = True,
+                 test_data_path: str = None):
         
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(exist_ok=True)
@@ -29,8 +30,9 @@ class Trainer:
         print("Loading dataset...")
         full_dataset = SongTranslationDataset(data_path)
         
-        # Split train/val (80/20)
-        train_size = int(0.8 * len(full_dataset))
+        # Split train/val (90/10 of the training file)
+        # The held-out test set is a separate .pt file (created by fma_data_builder).
+        train_size = int(0.9 * len(full_dataset))
         val_size = len(full_dataset) - train_size
         self.train_dataset, self.val_dataset = random_split(
             full_dataset,
@@ -38,7 +40,19 @@ class Trainer:
         )
         
         print(f"Train size: {len(self.train_dataset)}")
-        print(f"Val size: {len(self.val_dataset)}")
+        print(f"Val size:   {len(self.val_dataset)}")
+
+        # Optional held-out test set (separate file, 10% of songs held back at build time)
+        self.test_loader = None
+        if test_data_path:
+            test_dataset = SongTranslationDataset(test_data_path)
+            self.test_loader = DataLoader(
+                test_dataset,
+                batch_size=batch_size,
+                shuffle=False,
+                collate_fn=test_dataset.collate_fn
+            )
+            print(f"Test size:  {len(test_dataset)}")
         
         # Create dataloaders
         self.train_loader = DataLoader(
@@ -61,19 +75,24 @@ class Trainer:
             freeze_encoder=use_cpu_mode,
             freeze_decoder_layers=10 if use_cpu_mode else 0
         )
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        if torch.cuda.is_available():
+            self.device = torch.device('cuda')
+        elif torch.backends.mps.is_available():
+            self.device = torch.device('mps')
+        else:
+            self.device = torch.device('cpu')
         self.model.to(self.device)
         
         print(f"Device: {self.device}")
         
         # Optimizer — only optimize trainable parameters
-        trainable_params = [p for p in self.model.parameters() if p.requires_grad]
+        self.trainable_params = [p for p in self.model.parameters() if p.requires_grad]
         self.optimizer = optim.AdamW(
-            trainable_params,
+            self.trainable_params,
             lr=learning_rate,
             weight_decay=0.01
         )
-        
+
         self.num_epochs = num_epochs
         self.history = []
     
@@ -103,16 +122,23 @@ class Trainer:
             # Backward
             self.optimizer.zero_grad()
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(self.trainable_params, 1.0)
             self.optimizer.step()
             
             total_loss += loss.item()
             
-            pbar.set_postfix({
+            postfix = {
                 'loss': f"{loss.item():.4f}",
                 'trans': f"{loss_dict['translation_loss']:.3f}",
-                'syl': f"{loss_dict['syllable_loss']:.3f}"
-            })
+                'syl': f"{loss_dict['syllable_loss']:.3f}",
+            }
+            if loss_dict.get('naturalness_loss', 0) > 0:
+                postfix['nat'] = f"{loss_dict['naturalness_loss']:.3f}"
+            if loss_dict.get('rhythm_loss', 0) > 0:
+                postfix['rhy'] = f"{loss_dict['rhythm_loss']:.3f}"
+            if loss_dict.get('rhyme_loss', 0) > 0:
+                postfix['rhm'] = f"{loss_dict['rhyme_loss']:.3f}"
+            pbar.set_postfix(postfix)
         
         return total_loss / len(self.train_loader)
     
@@ -141,6 +167,37 @@ class Trainer:
         
         return total_loss / max(len(self.val_loader), 1)
     
+    def evaluate_test_set(self):
+        """Evaluate on held-out test set (called once after training)."""
+        if self.test_loader is None:
+            return None
+
+        self.model.eval()
+        total_loss = 0
+
+        with torch.no_grad():
+            for batch in self.test_loader:
+                src_ids = batch['src_ids'].to(self.device)
+                tgt_ids = batch['tgt_ids'].to(self.device)
+                melody = batch['melody_features'].to(self.device)
+                num_notes = batch['num_notes'].to(self.device)
+                tgt_syllables = batch['tgt_syllables'].to(self.device)
+
+                loss, _ = self.model(
+                    input_ids=src_ids,
+                    melody_features=melody,
+                    labels=tgt_ids,
+                    num_notes=num_notes,
+                    tgt_syllables=tgt_syllables
+                )
+                total_loss += loss.item()
+
+        test_loss = total_loss / max(len(self.test_loader), 1)
+        print(f"\n{'='*60}")
+        print(f"Held-out Test Loss: {test_loss:.4f}")
+        print(f"{'='*60}\n")
+        return test_loss
+
     def train(self):
         """Full training loop."""
         print(f"\n{'='*60}")
@@ -185,14 +242,18 @@ class Trainer:
         print(f"Best val loss: {best_val_loss:.4f}")
         print(f"{'='*60}\n")
 
+        # Final evaluation on held-out test set
+        self.evaluate_test_set()
+
 
 if __name__ == "__main__":
     import os
     PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
     os.chdir(PROJECT_ROOT)
-    
+
     trainer = Trainer(
-        data_path="data/processed/training_data.pt",
+        data_path="src/data/processed/fma_train_data.pt",
+        test_data_path="src/data/processed/fma_test_data.pt",
         batch_size=4,
         num_epochs=10
     )
