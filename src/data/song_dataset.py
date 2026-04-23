@@ -56,7 +56,7 @@ class SongTranslationDataset(Dataset):
             melody_pad[:ex['melody_features'].size(0)] = ex['melody_features']
             melody_features.append(melody_pad)
         
-        return {
+        result = {
             'src_ids': torch.stack(src_ids),
             'tgt_ids': torch.stack(tgt_ids),
             'melody_features': torch.stack(melody_features),
@@ -65,6 +65,19 @@ class SongTranslationDataset(Dataset):
             'tgt_syllables': torch.tensor([ex['tgt_syllables'] for ex in batch]),
             'song_names': [ex['song_name'] for ex in batch]
         }
+
+        # Stress pattern — optional, only present when built with phoneme alignment
+        if 'stress_pattern' in batch[0]:
+            max_stress_len = max(ex['stress_pattern'].size(0) for ex in batch)
+            stress_pats = []
+            for ex in batch:
+                sp = ex['stress_pattern']
+                sp_pad = torch.zeros(max_stress_len, dtype=torch.float32)
+                sp_pad[:sp.size(0)] = sp
+                stress_pats.append(sp_pad)
+            result['stress_pattern'] = torch.stack(stress_pats)
+
+        return result
 
 
 # Test

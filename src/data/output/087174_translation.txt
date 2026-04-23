@@ -1,0 +1,12 @@
+EN: Oh my life
+HI: ओह मेरे जीवन।
+
+EN: I wonder what's the important thing
+HI: मैं पूछ रहा हूँ महत्वपूर्ण बात है।
+
+EN: Tell me what's the important thing
+HI: मुझे बताओ क्या महत्वपूर्ण बात है।
+
+EN: So I know what's the important thing
+HI: तो मैं पता हूँ महत्वपूर्ण बात है।
+

@@ -1,0 +1,64 @@
+[line_01.wav]
+  EN: We don't need you.
+  HI: हम आप की जरूरत नहीं है.
+
+[line_02.wav]
+  EN: I'm a jerk!
+  HI: मैं एक झटका हूँ,
+
+[line_03.wav]
+  EN: Let's get that!
+  HI: चलो कि मिलता है!
+
+[line_04.wav]
+  EN: I'm a jerk!
+  HI: मैं एक झटका हूँ,
+
+[line_05.wav]
+  EN: I don't watch you.
+  HI: मैं तुम्हें नहीं देख रहा हूँ.
+
+[line_06.wav]
+  EN: I'm a jerk!
+  HI: मैं एक झटका हूँ,
+
+[line_07.wav]
+  EN: Let's get that!
+  HI: चलो कि मिलता है!
+
+[line_08.wav]
+  EN: Let's get that!
+  HI: चलो कि मिलता है!
+
+[line_09.wav]
+  EN: It's gonna work, ain't I, you know?
+  HI: यह काम करने वाला है, मैं नहीं हूँ, तुम्हें पता है?
+
+[line_10.wav]
+  EN: Ain't post-tune, I said, do the shit.
+  HI: मैं गंदगी नहीं है, मैंने कहा, गंदगी करो.
+
+[line_11.wav]
+  EN: Spatting like that's why the pride.
+  HI: कि गर्व क्यों है कि की तरह पीछा.
+
+[line_12.wav]
+  EN: Not a post-tune, I'm tired.
+  HI: पोस्ट-रोंज नहीं, मैं थक गया हूँ.
+
+[line_13.wav]
+  EN: Don't do that for chick's tears.
+  HI: लड़की के आँसू के लिए ऐसा मत करो.
+
+[line_14.wav]
+  EN: Drop that cash, gotta say.
+  HI: कि नकद ड्रॉप, कहना होगा.
+
+[line_15.wav]
+  EN: They don't like this like this.
+  HI: वे इस तरह की पसंद नहीं है.
+
+[line_16.wav]
+  EN: Just don't you, kid, buy it, man.
+  HI: बस तुम, बच्चे, इसे खरीद नहीं है, आदमी.
+

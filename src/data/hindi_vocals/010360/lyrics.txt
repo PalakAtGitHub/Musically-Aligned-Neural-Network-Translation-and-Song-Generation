@@ -1,0 +1,28 @@
+[line_01.wav]
+  EN: When she told inside, she sighed.
+  HI: जब उसने अंदर बताया, वह आह भरी.
+
+[line_02.wav]
+  EN: Now can't you see, it's faith he cried.
+  HI: अब आप नहीं देख सकते, यह विश्वास है वह रो रहा है.
+
+[line_03.wav]
+  EN: Come, love and be my happy bride.
+  HI: आओ, प्यार और मेरी खुश दुल्हन हो.
+
+[line_04.wav]
+  EN: Bride, her, send the rainbow beam, the love light in her eye.
+  HI: दुल्हन, उसकी आँखों में प्यार की रोशनी, मेघधनुष भेजता है.
+
+[line_05.wav]
+  EN: And as they wandered home that night.
+  HI: और वे उस रात घर भटकते रहे.
+
+[line_06.wav]
+  EN: Beneath the moon, beam still free light,
+  HI: चाँद के नीचे, अभी भी मुक्त प्रकाश,
+
+[line_07.wav]
+  EN: or the thing with delight.
+  HI: या उससे कुछ अधिक निकट हो गया ।
+

@@ -4,10 +4,10 @@ FMA Dataset Builder — Creates training data from FMA-medium audio files.
 Correct pipeline per song:
   1. Demucs htdemucs    → vocals.wav  (source separation, cached)
   2. Whisper base       → English lyric segments  (ASR on vocals)
-  3. Helsinki-NLP MT    → Hindi translation per lyric line
+  3. IndicTrans2 MT    → Hindi translation per lyric line
   4. AudioMelodyExtractor → [num_notes, 5] features from vocals
   5. Melody split       → one note-slice per lyric line
-  6. Tokenize (mBART)   → src_ids (en_XX) + tgt_ids (hi_IN)
+  6. Tokenize (IndicTrans2) → src_ids + tgt_ids
   7. Save example       → same format as DatasetBuilder
 
 Song-level train/test split:
@@ -42,11 +42,12 @@ import numpy as np
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 
-from transformers import MBart50TokenizerFast, MarianMTModel, MarianTokenizer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 from src.data.audio_melody_extractor import AudioMelodyExtractor
 from src.data.audio_separator import AudioSeparator
 from src.utils.syllable_utils import count_english_syllables, count_hindi_syllables
+from src.utils.phoneme_utils import get_stress_pattern
 
 # Minimum quality thresholds for vocal content
 MIN_SEGMENTS = 2    # at least this many Whisper lyric segments
@@ -59,11 +60,11 @@ class FMADatasetBuilder:
 
     Each processed song contributes one training example per lyric segment —
     the English lyric is real (from Whisper ASR), the Hindi translation is
-    from a pretrained MT model, and the melody features come from the same
-    separated vocals track.
+    from IndicTrans2, and the melody features come from the same separated
+    vocals track.
     """
 
-    TRANSLATION_MODEL = "Helsinki-NLP/opus-mt-en-hi"
+    TRANSLATION_MODEL = "ai4bharat/indictrans2-en-indic-1B"
 
     def __init__(self,
                  fma_dir: str = "src/data/fma_medium",
@@ -94,16 +95,25 @@ class FMADatasetBuilder:
         if not self.fma_dir.exists():
             raise FileNotFoundError(f"FMA directory not found: {self.fma_dir}")
 
-        print("Loading mBART tokenizer  (for training example tokenization)...")
-        self.mbart_tokenizer = MBart50TokenizerFast.from_pretrained(
-            "facebook/mbart-large-50-many-to-many-mmt"
+        self.IT2_MODEL = self.TRANSLATION_MODEL  # same model used for labels
+        print(f"Loading IndicTrans2 tokenizer  ({self.IT2_MODEL})...")
+        self.it2_tokenizer = AutoTokenizer.from_pretrained(
+            self.IT2_MODEL, trust_remote_code=True
         )
 
         print(f"Loading translation model  ({self.TRANSLATION_MODEL})...")
-        self.mt_tokenizer = MarianTokenizer.from_pretrained(self.TRANSLATION_MODEL)
-        self.mt_model = MarianMTModel.from_pretrained(self.TRANSLATION_MODEL)
+        # IndicTrans2 serves as BOTH the label generator and the downstream
+        # MCNST backbone. Using the same model for both means training labels
+        # and the student model share a ceiling, but it is a vastly better
+        # teacher than MarianMT opus-mt-en-hi on lyric-like text.
+        self.mt_model = AutoModelForSeq2SeqLM.from_pretrained(
+            self.IT2_MODEL, trust_remote_code=True
+        )
         self.mt_model.to(self.device)
         self.mt_model.eval()
+        # Translation tokenizer is the SAME tokenizer as it2_tokenizer —
+        # alias for readability below.
+        self.mt_tokenizer = self.it2_tokenizer
 
         # Lazy-load Whisper (large download — only on first _transcribe call)
         self._whisper = None
@@ -210,25 +220,46 @@ class FMADatasetBuilder:
     # ------------------------------------------------------------------
 
     def _translate(self, english_lines: List[str]) -> List[str]:
-        """Translate English lyric lines to Hindi using MarianMT."""
+        """Translate English lyric lines to Hindi using IndicTrans2.
+
+        IndicTrans2 input format is 'src_lang tgt_lang <text>'. The target
+        tokenizer vocab is separate, so we switch modes to decode properly.
+        """
         if not english_lines:
             return []
 
+        # Prefix with language tags (IndicTrans2 convention)
+        tagged = [f"eng_Latn hin_Deva {line}" for line in english_lines]
+
         inputs = self.mt_tokenizer(
-            english_lines,
+            tagged,
             return_tensors="pt",
             padding=True,
             truncation=True,
-            max_length=128
+            max_length=128,
         )
         inputs = {k: v.to(self.device) for k, v in inputs.items()}
 
         with torch.no_grad():
-            translated_ids = self.mt_model.generate(**inputs)
+            translated_ids = self.mt_model.generate(
+                **inputs,
+                num_beams=5,
+                max_length=128,
+                use_cache=True,
+            )
 
+        # Decode using target-side vocabulary
+        try:
+            self.mt_tokenizer._switch_to_target_mode()
+        except Exception:
+            pass
         hindi_lines = self.mt_tokenizer.batch_decode(
             translated_ids, skip_special_tokens=True
         )
+        try:
+            self.mt_tokenizer._switch_to_input_mode()
+        except Exception:
+            pass
         return hindi_lines
 
     # ------------------------------------------------------------------
@@ -271,27 +302,37 @@ class FMADatasetBuilder:
                        melody_slice: np.ndarray,
                        song_name: str) -> Dict:
         """Create one training example in the same format as DatasetBuilder."""
-        self.mbart_tokenizer.src_lang = "en_XX"
-        src_ids = self.mbart_tokenizer(
-            english,
+        # IndicTrans2 source tokenization: "eng_Latn hin_Deva <text>"
+        src_text = f"eng_Latn hin_Deva {english}"
+        src_ids = self.it2_tokenizer(
+            src_text,
             return_tensors="pt",
             padding=False,
             truncation=True,
             max_length=128
         ).input_ids[0]
 
-        self.mbart_tokenizer.src_lang = "hi_IN"
-        tgt_ids = self.mbart_tokenizer(
+        # IndicTrans2 target tokenization: switch to target SPM/vocab
+        self.it2_tokenizer._switch_to_target_mode()
+        tgt_ids = self.it2_tokenizer(
             hindi,
             return_tensors="pt",
             padding=False,
             truncation=True,
             max_length=128
         ).input_ids[0]
+        self.it2_tokenizer._switch_to_input_mode()
 
         en_syl = count_english_syllables(english)
         hi_syl = count_hindi_syllables(hindi)
         num_notes = len(melody_slice)
+
+        stress = get_stress_pattern(hindi)
+        stress_tensor = (
+            torch.tensor(stress, dtype=torch.float32)
+            if stress
+            else torch.zeros(max(1, hi_syl), dtype=torch.float32)
+        )
 
         return {
             "src_ids": src_ids,
@@ -303,6 +344,7 @@ class FMADatasetBuilder:
             "song_name": song_name,
             "english_text": english,
             "hindi_text": hindi,
+            "stress_pattern": stress_tensor,
         }
 
     # ------------------------------------------------------------------
@@ -504,7 +546,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(
         description="Build FMA training/test datasets for MCNST "
-                    "(uses Demucs + Whisper + MarianMT)"
+                    "(uses Demucs + Whisper + IndicTrans2)"
     )
     parser.add_argument(
         "--max", type=int, default=200,

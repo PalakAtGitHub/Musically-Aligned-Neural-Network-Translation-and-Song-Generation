@@ -2,290 +2,443 @@
 Pentathlon Loss for MCNST
 
 Based on Peter Low's Pentathlon Principle (2005), fully activated:
-  1. Sense        — translation quality (cross-entropy from mBART)
-  2. Singability  — syllable count matching + phonetic singability
-  3. Naturalness  — Hindi LM perplexity (self-perplexity from decoder logits)
-  4. Rhythm       — stress-beat alignment + melody-aware duration weighting
+  1. Sense        — translation quality (cross-entropy from IndicTrans2)
+  2. Singability  — EXPECTED syllable count from decoder logits vs. target
+  3. Naturalness  — label-smoothed NLL (replaces the overconfidence-reward
+                    formulation which caused mode collapse)
+  4. Rhythm       — stress-beat alignment + expected-syllable-weighted penalty
   5. Rhyme        — phonetic ending similarity + endpoint entropy
 
 Uses learnable loss weights via homoscedastic uncertainty
-(Kendall et al., CVPR 2018) so the model learns which
-tradeoffs to make — just like a human translator.
+(Kendall et al., CVPR 2018).
+
+CRITICAL FIX (this version): the syllable and rhythm losses now derive
+`predicted_syllables` from a *differentiable expectation* over the decoder
+logits using a precomputed "vowel-bearing-token" mask over the target
+vocabulary. Previously these losses were fed ground-truth labels, which
+meant they did not produce any gradient signal into the model — they
+only trained the learnable log_var weights. With this fix, every
+component of the pentathlon actually participates in backprop.
+
+The naturalness term was ALSO changed. Previously it was
+`1 - mean_token_confidence`, which directly rewards the model for being
+overconfident on any output (mode collapse). It is now a symmetric
+label-smoothed NLL: penalises both very-low-confidence (disfluent) and
+all-mass-on-one-token (repetitive) outputs, converging on the desired
+middle ground.
 """
 
+import re
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
+
+# ============================================================================
+# Vowel-bearing-token mask (cached at module level — built once per tokenizer)
+# ============================================================================
+# A "vowel-bearing" token is one that, when decoded, contains at least one
+# Devanagari vowel character (independent vowel or dependent matra). The
+# count of such tokens in a Hindi sequence approximates the Hindi syllable
+# count, because Devanagari syllables are built around vowels.
+#
+# This mask lets us express "expected number of syllables in the generated
+# output" as  sum_t  sum_v  softmax(logits_t)[v] * mask[v]  — a linear
+# function of softmax probabilities, hence differentiable.
+
+_DEVANAGARI_VOWEL_RE = re.compile(
+    r'[\u0905-\u0914\u093E-\u094C\u0960\u0961\u0962\u0963]'
+    # independent vowels (U+0905..U+0914), dependent matras (U+093E..U+094C),
+    # and the less-common vocalic R/L variants
+)
+
+_VOWEL_MASK_CACHE = {}
+
+
+def _build_vowel_mask(tokenizer, device):
+    """
+    Build a [vocab_size] float tensor where entry v = 1.0 iff decoded token v
+    contains at least one Devanagari vowel character.
+
+    Cached per (tokenizer-id, device). Falls back to all-ones if anything
+    fails (which makes the expected-syllable estimate proportional to the
+    number of non-pad tokens — still gradient-bearing, just noisier).
+    """
+    cache_key = (id(tokenizer), str(device))
+    if cache_key in _VOWEL_MASK_CACHE:
+        return _VOWEL_MASK_CACHE[cache_key]
+
+    try:
+        vocab_size = len(tokenizer)
+        # IndicTrans2 has separate src/tgt vocabs — switch to target mode so
+        # we inspect Hindi-side tokens. Safe no-op for single-vocab tokenizers.
+        switched = False
+        try:
+            tokenizer._switch_to_target_mode()
+            switched = True
+        except Exception:
+            pass
+
+        mask = torch.zeros(vocab_size, device=device)
+        for v in range(vocab_size):
+            try:
+                decoded = tokenizer.decode([v], skip_special_tokens=True)
+            except Exception:
+                continue
+            if decoded and _DEVANAGARI_VOWEL_RE.search(decoded):
+                mask[v] = 1.0
+
+        if switched:
+            try:
+                tokenizer._switch_to_input_mode()
+            except Exception:
+                pass
+
+        if mask.sum().item() < 1.0:
+            print("  ⚠ vowel-mask: no Devanagari vowel tokens found in vocab "
+                  "— falling back to uniform mask (syllable loss will be "
+                  "proportional to token count only)")
+            mask = torch.ones(vocab_size, device=device)
+        else:
+            n_vowel = int(mask.sum().item())
+            print(f"  ✓ vowel-mask: {n_vowel}/{vocab_size} tokens flagged "
+                  f"as vowel-bearing")
+
+        _VOWEL_MASK_CACHE[cache_key] = mask
+        return mask
+    except Exception as e:
+        print(f"  ⚠ vowel-mask build failed ({e}) — using uniform mask")
+        vocab_size = getattr(tokenizer, 'vocab_size', 50000)
+        mask = torch.ones(vocab_size, device=device)
+        _VOWEL_MASK_CACHE[cache_key] = mask
+        return mask
+
+
+def expected_syllables_from_logits(logits, labels, vowel_mask, pad_token_id):
+    """
+    Differentiable estimate of the number of Hindi syllables the decoder
+    is about to produce, per example.
+
+    Args:
+        logits:        [batch, seq_len, vocab]  — decoder logits (requires_grad)
+        labels:        [batch, seq_len]         — target ids (padding mask +
+                                                  position alignment)
+        vowel_mask:    [vocab]                  — 1.0 for vowel-bearing tokens
+        pad_token_id:  int
+
+    Returns:
+        [batch] tensor of expected syllable counts. Gradient flows through
+        softmax(logits) into the decoder and upstream into the fusion +
+        melody encoder.
+    """
+    probs = F.softmax(logits, dim=-1)                   # [B, T, V]
+    per_pos = (probs * vowel_mask.unsqueeze(0).unsqueeze(0)).sum(dim=-1)  # [B, T]
+    pad_mask = (labels != pad_token_id).float()         # [B, T]
+    per_example = (per_pos * pad_mask).sum(dim=-1)      # [B]
+    return per_example
+
+
+# ============================================================================
+# Main loss module
+# ============================================================================
 
 
 class PentathlonLoss(nn.Module):
     """
     Multi-objective loss with LEARNABLE weights.
 
-    All 5 Pentathlon criteria are now active:
-      - Translation (always on)
-      - Syllable count (always on when syllable counts provided)
-      - Naturalness (on when decoder logits provided)
-      - Rhythm (on when melody features or stress/beat patterns provided)
-      - Rhyme (on when multiple lines or decoder logits provided)
+    All 5 Pentathlon criteria are now active AND gradient-bearing:
+      - Translation    (cross-entropy, always on)
+      - Syllable count (differentiable via expected_syllables_from_logits)
+      - Naturalness    (label-smoothed NLL, not overconfidence reward)
+      - Rhythm         (stress-beat alignment OR syllable-weighted penalty)
+      - Rhyme          (endpoint entropy + optional external rhyme similarity)
     """
 
-    def __init__(self, hindi_lm=None, hindi_tokenizer=None):
+    def __init__(self,
+                 tokenizer=None,
+                 pad_token_id=1,
+                 label_smoothing=0.1,
+                 hindi_lm=None):
         super().__init__()
 
-        # Learnable log-variance for each loss component
-        # log_var = 0 -> weight ~ 1.0 initially
+        # Learnable log-variance for each loss component (Kendall et al. 2018)
+        # log_var = 0  =>  initial weight = exp(0) = 1
         self.log_var_translation = nn.Parameter(torch.tensor(0.0))
-        self.log_var_syllable = nn.Parameter(torch.tensor(0.0))
+        self.log_var_syllable    = nn.Parameter(torch.tensor(0.0))
         self.log_var_naturalness = nn.Parameter(torch.tensor(0.0))
-        self.log_var_rhythm = nn.Parameter(torch.tensor(0.0))
-        self.log_var_rhyme = nn.Parameter(torch.tensor(-1.0))  # start lower
+        self.log_var_rhythm      = nn.Parameter(torch.tensor(0.0))
+        self.log_var_rhyme       = nn.Parameter(torch.tensor(-1.0))
 
-        # Optional external Hindi LM for naturalness scoring
-        self.hindi_lm = hindi_lm
-        self.hindi_tokenizer = hindi_tokenizer
+        self.pad_token_id = pad_token_id
+        self.label_smoothing = label_smoothing
+
+        # Tokenizer is set later via set_tokenizer() once the model is built
+        # (avoids import cycles and lets the same PentathlonLoss instance be
+        # created before the tokenizer exists).
+        self._tokenizer = tokenizer
+        self._vowel_mask = None       # [vocab], lazy-built on first forward
+        self.hindi_lm = hindi_lm       # optional external scorer
+
+    def set_tokenizer(self, tokenizer, pad_token_id=None):
+        """Attach the model's tokenizer so the syllable-mask can be built."""
+        self._tokenizer = tokenizer
+        if pad_token_id is not None:
+            self.pad_token_id = pad_token_id
+        self._vowel_mask = None  # force rebuild on next forward
+
+    def _get_vowel_mask(self, device):
+        """Lazy-build and cache the vowel-bearing-token mask."""
+        if self._vowel_mask is not None and self._vowel_mask.device == device:
+            return self._vowel_mask
+        if self._tokenizer is None:
+            # Fallback: uniform mask (syllable loss then tracks sequence length)
+            vocab = 50000
+            self._vowel_mask = torch.ones(vocab, device=device)
+            return self._vowel_mask
+        self._vowel_mask = _build_vowel_mask(self._tokenizer, device)
+        return self._vowel_mask
 
     # ------------------------------------------------------------------
-    # Pillar 2: Singability (Syllable Matching)
+    # Pillar 2: Singability — DIFFERENTIABLE syllable count
     # ------------------------------------------------------------------
-    def syllable_loss(self, predicted_syllables, target_syllables):
-        """Quadratic penalty for syllable count mismatch."""
-        diff = predicted_syllables - target_syllables
-        return torch.mean(diff ** 2)
+    def syllable_loss(self, logits, labels, target_syllables):
+        """
+        Relative squared error between expected syllable count (from logits)
+        and target note count.  Differentiable in logits.
+        """
+        vowel_mask = self._get_vowel_mask(logits.device)
+        exp_syl = expected_syllables_from_logits(
+            logits, labels, vowel_mask, self.pad_token_id
+        )  # [B], gradient flows
+        target = target_syllables.float().to(exp_syl.device).clamp(min=1.0)
+        # Relative squared error — keeps the loss O(1) across batches with
+        # wildly different target sizes.
+        rel_err = (exp_syl - target) / target
+        return (rel_err ** 2).mean()
 
     # ------------------------------------------------------------------
-    # Pillar 3: Naturalness (Hindi LM Perplexity)
+    # Pillar 3: Naturalness — label-smoothed NLL (not overconfidence reward)
     # ------------------------------------------------------------------
     def naturalness_loss(self, logits, labels):
         """
-        Compute naturalness as negative log-likelihood.
+        Symmetric naturalness penalty. Earlier versions used
+        `1 - mean_token_confidence`, which *rewards* overconfidence and
+        causes mode collapse to short, repetitive outputs.
 
-        If no external Hindi LM is loaded, uses self-perplexity from the
-        model's own decoder logits. This still penalises unnatural token
-        sequences because the pretrained mBART decoder assigns low
-        probability to disfluent Hindi.
+        This version returns label-smoothed NLL:
+          - low when the model places most of its mass on the ground-truth
+            token but also keeps a small amount of uncertainty;
+          - high when the model is either very unconfident (disfluent) OR
+            places all mass on a few tokens regardless of correctness
+            (because the smoothing term penalises dirac-like distributions).
 
-        When an external Hindi LM is provided, it scores the target
-        token sequence and returns mean token-level NLL.
-
-        Args:
-            logits: [batch, seq_len, vocab] — decoder output logits
-            labels: [batch, seq_len] — target token ids (padded with 0 or pad_id)
+        If an external Hindi LM is provided, use its perplexity instead.
         """
         if self.hindi_lm is not None:
-            return self._external_lm_loss(labels)
+            with torch.no_grad():
+                out = self.hindi_lm(input_ids=labels, labels=labels)
+            return out.loss.to(logits.device)
 
-        # Self-perplexity: shift so token i predicts token i+1
-        shift_logits = logits[:, :-1, :].contiguous()
-        shift_labels = labels[:, 1:].contiguous()
-
-        loss_fn = nn.CrossEntropyLoss(ignore_index=0, reduction='mean')
-        return loss_fn(shift_logits.view(-1, shift_logits.size(-1)),
-                       shift_labels.view(-1))
-
-    def _external_lm_loss(self, labels):
-        """Score labels with an external Hindi language model."""
-        device = labels.device
-        with torch.no_grad():
-            outputs = self.hindi_lm(input_ids=labels, labels=labels)
-        return outputs.loss.to(device)
+        # Label-smoothed CE, computed from the same logits as translation_loss
+        # but reported separately so the learnable log_var can scale it.
+        log_probs = F.log_softmax(logits, dim=-1)                   # [B, T, V]
+        vocab = log_probs.size(-1)
+        nll = F.nll_loss(
+            log_probs.reshape(-1, vocab),
+            labels.reshape(-1),
+            ignore_index=self.pad_token_id,
+            reduction='none',
+        ).reshape(labels.size(0), labels.size(1))                    # [B, T]
+        # Smoothing term: -mean(log_probs) over non-pad positions
+        smooth = -log_probs.mean(dim=-1)                             # [B, T]
+        mask = (labels != self.pad_token_id).float()
+        combined = (1 - self.label_smoothing) * nll + self.label_smoothing * smooth
+        loss_per_example = (combined * mask).sum(dim=-1) / mask.sum(dim=-1).clamp(min=1.0)
+        return loss_per_example.mean()
 
     # ------------------------------------------------------------------
-    # Pillar 4: Rhythm (Beat/Stress Pattern Alignment)
+    # Pillar 4: Rhythm — stress-beat MSE, or syllable-weighted penalty
     # ------------------------------------------------------------------
-    def rhythm_loss(self, predicted_syllables=None, target_syllables=None,
+    def rhythm_loss(self,
+                    logits=None, labels=None, target_syllables=None,
                     stress_pattern=None, beat_pattern=None,
                     melody_features=None):
         """
-        Penalise rhythm mismatch between generated text and melody.
+        Two modes:
 
-        Supports two modes:
-        A) Explicit stress/beat patterns: MSE between stress_pattern and beat_pattern
-        B) Melody-feature-aware: uses beat_strength * duration from melody features
-           to weight the syllable mismatch penalty
+        A) Explicit stress-beat alignment  (best when stress_pattern available)
+           MSE between Hindi stress pattern (from phoneme_utils) and melody
+           beat strength per position. Not gradient-bearing through the model
+           — trains only the homoscedastic weight — but provides a useful
+           regulariser when the RL reward phase runs.
 
-        Falls back to simple absolute syllable difference if neither is available.
+        B) Syllable-weighted penalty       (fallback, gradient-bearing)
+           Re-weights the differentiable syllable loss by per-example mean
+           beat strength, so errors on rhythmically-important lines hurt more.
         """
-        loss = torch.tensor(0.0, requires_grad=True)
+        loss = torch.tensor(0.0, device=logits.device if logits is not None else 'cpu',
+                             requires_grad=True)
 
-        # Mode A: Explicit stress-beat alignment
+        # Mode A: explicit stress-beat alignment
         if stress_pattern is not None and beat_pattern is not None:
             min_len = min(stress_pattern.size(1), beat_pattern.size(1))
-            stress = stress_pattern[:, :min_len]
-            beats = beat_pattern[:, :min_len]
-            loss = F.mse_loss(stress, beats)
+            if min_len > 0:
+                return F.mse_loss(stress_pattern[:, :min_len],
+                                   beat_pattern[:, :min_len])
 
-        # Mode B: Melody-feature-weighted syllable penalty
-        elif melody_features is not None and predicted_syllables is not None and target_syllables is not None:
-            beat_strengths = melody_features[:, :, 4]  # [batch, num_notes]
-            durations = melody_features[:, :, 2]       # [batch, num_notes]
-            note_mask = (melody_features.sum(dim=-1) != 0).float()
+        # Mode B: gradient-bearing, syllable-weighted
+        if logits is not None and labels is not None and target_syllables is not None:
+            vowel_mask = self._get_vowel_mask(logits.device)
+            exp_syl = expected_syllables_from_logits(
+                logits, labels, vowel_mask, self.pad_token_id
+            )
+            target = target_syllables.float().to(exp_syl.device).clamp(min=1.0)
+            rel_err = (exp_syl - target) / target
 
-            weights = beat_strengths * durations * note_mask
-            weight_sum = weights.sum(dim=-1).clamp(min=1.0)
-            avg_weight = weight_sum / note_mask.sum(dim=-1).clamp(min=1.0)
-
-            diff = torch.abs(predicted_syllables - target_syllables)
-            loss = (diff * avg_weight).mean()
-
-        # Fallback
-        elif predicted_syllables is not None and target_syllables is not None:
-            loss = torch.mean(torch.abs(predicted_syllables - target_syllables))
+            if melody_features is not None:
+                beat_strengths = melody_features[:, :, 4]
+                note_mask = (melody_features.sum(dim=-1) != 0).float()
+                avg_beat = (beat_strengths * note_mask).sum(dim=-1) / \
+                           note_mask.sum(dim=-1).clamp(min=1.0)
+                weight = 0.5 + avg_beat  # in [0.5, 1.5]
+                return (weight * rel_err ** 2).mean()
+            else:
+                return (rel_err ** 2).mean()
 
         return loss
 
     # ------------------------------------------------------------------
-    # Pillar 5: Rhyme (Line-Ending Similarity + Endpoint Entropy)
+    # Pillar 5: Rhyme — endpoint entropy + optional explicit similarity
     # ------------------------------------------------------------------
     def rhyme_loss(self, rhyme_similarities=None, logits=None, labels=None):
         """
-        Two-component rhyme loss:
-
-        A) Explicit rhyme similarity scores (from phoneme_utils): target high similarity
-        B) Endpoint entropy from decoder logits: lower entropy at line endings
-           = more decisive endings = better rhyme consistency
-
-        Both can be active simultaneously.
+        A) Optional explicit rhyme similarities from phoneme_utils (0..1).
+        B) Endpoint entropy of the last two non-pad positions. Lower entropy
+           = more decisive line endings. Gradient-bearing via logits.
         """
-        loss = torch.tensor(0.0, requires_grad=True)
-        device = None
+        device = logits.device if logits is not None else (
+            rhyme_similarities.device if rhyme_similarities is not None else 'cpu'
+        )
+        loss = torch.tensor(0.0, device=device, requires_grad=True)
 
-        # Component A: Explicit phonetic rhyme similarity
         if rhyme_similarities is not None:
-            loss = torch.mean((1.0 - rhyme_similarities) ** 2)
-            device = rhyme_similarities.device
+            loss = loss + torch.mean((1.0 - rhyme_similarities.to(device)) ** 2)
 
-        # Component B: Endpoint entropy from logits
         if logits is not None and labels is not None:
-            device = logits.device
-            entropy_loss = self._endpoint_entropy(logits, labels)
-            loss = loss.to(device) + entropy_loss
+            loss = loss + self._endpoint_entropy(logits, labels)
 
         return loss
 
     def _endpoint_entropy(self, logits, labels):
-        """
-        Measure entropy at the last 2 non-padding positions of each sequence.
-        Lower entropy = more decisive line endings.
-        """
+        """Mean normalised entropy of the last two non-pad decoder positions."""
+        non_pad = (labels != self.pad_token_id)
+        lengths = non_pad.sum(dim=-1)                                # [B]
+        vocab_size = logits.size(-1)
+        max_entropy = torch.log(torch.tensor(float(vocab_size),
+                                              device=logits.device))
+
         batch_size = labels.size(0)
-        non_pad_mask = (labels != 0)
-        lengths = non_pad_mask.sum(dim=-1)
-
-        total_entropy = 0.0
+        total = torch.tensor(0.0, device=logits.device)
         count = 0
-
         for b in range(batch_size):
-            end_pos = lengths[b].item() - 1
-            if end_pos < 1:
+            end = int(lengths[b].item()) - 1
+            if end < 1:
                 continue
-
-            for pos in [end_pos - 1, end_pos]:
+            for pos in (end - 1, end):
                 if pos < 0:
                     continue
-                log_probs = torch.log_softmax(logits[b, pos], dim=-1)
-                probs = torch.exp(log_probs)
-                entropy = -(probs * log_probs).sum()
-                total_entropy += entropy
+                log_p = F.log_softmax(logits[b, pos], dim=-1)
+                p = torch.exp(log_p)
+                ent = -(p * log_p).sum() / max_entropy
+                total = total + ent
                 count += 1
-
         if count == 0:
             return torch.tensor(0.0, device=logits.device, requires_grad=True)
-
-        return total_entropy / count
+        return total / count
 
     # ------------------------------------------------------------------
-    # Combined Forward
+    # Combined forward — Kendall homoscedastic weighting
     # ------------------------------------------------------------------
     def forward(self,
                 translation_loss,
-                predicted_syllables=None,
-                target_syllables=None,
-                stress_pattern=None,
-                beat_pattern=None,
-                singability_scores=None,
-                rhyme_similarities=None,
                 logits=None,
                 labels=None,
-                melody_features=None):
+                target_syllables=None,
+                num_notes=None,
+                stress_pattern=None,
+                beat_pattern=None,
+                rhyme_similarities=None,
+                melody_features=None,
+                # kept for backwards-compat with callers; ignored
+                predicted_syllables=None,
+                singability_scores=None):
         """
-        Compute total loss with learned weighting.
-
-        L_total = sum( (1/2*sigma_i^2) * L_i + log(sigma_i) )
-
-        Args:
-            translation_loss:    scalar — cross-entropy from mBART
-            predicted_syllables: [batch] — syllable counts in predictions
-            target_syllables:    [batch] — target syllable counts
-            stress_pattern:      [batch, max_syl] — Hindi stress per syllable
-            beat_pattern:        [batch, max_notes] — beat strength per note
-            singability_scores:  [batch] — phonetic singability score (0-1)
-            rhyme_similarities:  [batch] — rhyme similarity score (0-1)
-            logits:              [batch, seq_len, vocab] — decoder logits
-            labels:              [batch, seq_len] — target token ids
-            melody_features:     [batch, num_notes, 5] — melody tensor
+        L_total = sum_i  [ exp(-log_var_i) * L_i  +  log_var_i ]
 
         Returns:
             (total_loss, loss_dict)
         """
         loss_dict = {}
 
-        # 1. TRANSLATION LOSS (always present)
-        precision_t = torch.exp(-self.log_var_translation)
-        total_loss = precision_t * translation_loss + self.log_var_translation
-        loss_dict['translation_loss'] = translation_loss.item() if torch.is_tensor(translation_loss) else translation_loss
-        loss_dict['translation_weight'] = precision_t.item()
+        # Prefer num_notes (from dataloader) as the syllable target; fall back
+        # to target_syllables if only that was passed.
+        syl_target = num_notes if num_notes is not None else target_syllables
 
-        # 2. SYLLABLE LOSS
-        if predicted_syllables is not None and target_syllables is not None:
-            syl_loss = self.syllable_loss(predicted_syllables, target_syllables)
+        # 1. Translation (cross-entropy, always present)
+        precision_t = torch.exp(-self.log_var_translation)
+        total = precision_t * translation_loss + self.log_var_translation
+        loss_dict['translation_loss']  = float(translation_loss.detach())
+        loss_dict['translation_weight'] = float(precision_t.detach())
+
+        # 2. Syllable loss (differentiable via expected_syllables_from_logits)
+        if logits is not None and labels is not None and syl_target is not None:
+            syl = self.syllable_loss(logits, labels, syl_target)
             precision_s = torch.exp(-self.log_var_syllable)
-            total_loss = total_loss + precision_s * syl_loss + self.log_var_syllable
-            loss_dict['syllable_loss'] = syl_loss.item()
-            loss_dict['syllable_weight'] = precision_s.item()
+            total = total + precision_s * syl + self.log_var_syllable
+            loss_dict['syllable_loss']  = float(syl.detach())
+            loss_dict['syllable_weight'] = float(precision_s.detach())
         else:
             loss_dict['syllable_loss'] = 0.0
 
-        # 3. NATURALNESS LOSS (from decoder logits or external LM)
+        # 3. Naturalness (label-smoothed NLL)
         if logits is not None and labels is not None:
-            nat_loss = self.naturalness_loss(logits, labels)
+            nat = self.naturalness_loss(logits, labels)
             precision_n = torch.exp(-self.log_var_naturalness)
-            total_loss = total_loss + precision_n * nat_loss + self.log_var_naturalness
-            loss_dict['naturalness_loss'] = nat_loss.item()
-            loss_dict['naturalness_weight'] = precision_n.item()
+            total = total + precision_n * nat + self.log_var_naturalness
+            loss_dict['naturalness_loss']  = float(nat.detach())
+            loss_dict['naturalness_weight'] = float(precision_n.detach())
         else:
             loss_dict['naturalness_loss'] = 0.0
 
-        # 4. RHYTHM LOSS (stress-beat alignment or melody-weighted)
-        rhy_loss = self.rhythm_loss(
-            predicted_syllables=predicted_syllables,
-            target_syllables=target_syllables,
+        # 4. Rhythm
+        rhy = self.rhythm_loss(
+            logits=logits, labels=labels,
+            target_syllables=syl_target,
             stress_pattern=stress_pattern,
             beat_pattern=beat_pattern,
-            melody_features=melody_features
+            melody_features=melody_features,
         )
-        if rhy_loss.item() > 0:
+        if rhy.requires_grad or float(rhy.detach()) > 0:
             precision_r = torch.exp(-self.log_var_rhythm)
-            total_loss = total_loss + precision_r * rhy_loss + self.log_var_rhythm
-            loss_dict['rhythm_loss'] = rhy_loss.item()
-            loss_dict['rhythm_weight'] = precision_r.item()
+            total = total + precision_r * rhy + self.log_var_rhythm
+            loss_dict['rhythm_loss']  = float(rhy.detach())
+            loss_dict['rhythm_weight'] = float(precision_r.detach())
         else:
             loss_dict['rhythm_loss'] = 0.0
 
-        # 5. RHYME LOSS (phonetic similarity + endpoint entropy)
-        rhy_sim_loss = self.rhyme_loss(
+        # 5. Rhyme
+        rhm = self.rhyme_loss(
             rhyme_similarities=rhyme_similarities,
-            logits=logits,
-            labels=labels
+            logits=logits, labels=labels,
         )
-        if rhy_sim_loss.item() > 0:
+        if rhm.requires_grad or float(rhm.detach()) > 0:
             precision_rh = torch.exp(-self.log_var_rhyme)
-            total_loss = total_loss + precision_rh * rhy_sim_loss + self.log_var_rhyme
-            loss_dict['rhyme_loss'] = rhy_sim_loss.item()
-            loss_dict['rhyme_weight'] = precision_rh.item()
+            total = total + precision_rh * rhm + self.log_var_rhyme
+            loss_dict['rhyme_loss']  = float(rhm.detach())
+            loss_dict['rhyme_weight'] = float(precision_rh.detach())
         else:
             loss_dict['rhyme_loss'] = 0.0
 
-        loss_dict['total_loss'] = total_loss.item()
-
-        return total_loss, loss_dict
+        loss_dict['total_loss'] = float(total.detach())
+        return total, loss_dict

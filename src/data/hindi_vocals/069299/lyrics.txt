@@ -1,0 +1,52 @@
+[line_01.wav]
+  EN: What do you think?
+  HI: आपको क्या लगता है?
+
+[line_02.wav]
+  EN: That was your name.
+  HI: तुम्हारा नाम था.
+
+[line_03.wav]
+  EN: I'm a kid.
+  HI: मैं बच्चा हूँ.
+
+[line_04.wav]
+  EN: I'm not good.
+  HI: मैं अच्छा नहीं हूँ.
+
+[line_05.wav]
+  EN: I'm not good.
+  HI: मैं अच्छा नहीं हूँ.
+
+[line_06.wav]
+  EN: That was your name.
+  HI: तुम्हारा नाम था.
+
+[line_07.wav]
+  EN: You're a kid.
+  HI: तुम एक बच्चे हो.
+
+[line_08.wav]
+  EN: You're not a kid.
+  HI: तुम बच्चे नहीं हो.
+
+[line_09.wav]
+  EN: I'm a kid.
+  HI: मैं बच्चा हूँ.
+
+[line_10.wav]
+  EN: I'm a child.
+  HI: मैं बच्चा हूँ.
+
+[line_11.wav]
+  EN: I'm a young.
+  HI: मैं एक युवा हूँ.
+
+[line_12.wav]
+  EN: I'm still a little bit old.
+  HI: मैं अभी भी एक छोटा सा बूढ़ा हूँ.
+
+[line_13.wav]
+  EN: I'm not not a kid.
+  HI: मैं बच्चा नहीं हूँ.
+

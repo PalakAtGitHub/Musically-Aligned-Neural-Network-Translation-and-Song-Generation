@@ -48,6 +48,11 @@ env/
 # Allow some small sample data
 !data/samples/
 
+# Allow audio results (hindi vocals + mixed output)
+!src/data/hindi_vocals/**/*.wav
+!src/data/hindi_vocals/**/*.txt
+!src/data/output/*.wav
+
 # macOS
 .DS_Store
 
@@ -55,5 +60,4 @@ env/
 checkpoints/
 logs/
 fma_medium/
-src/audio/
 src/data/processed/fma_progress.json

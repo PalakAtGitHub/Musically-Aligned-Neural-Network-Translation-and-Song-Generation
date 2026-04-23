@@ -1,0 +1,68 @@
+[line_01.wav]
+  EN: But it's your home.
+  HI: लेकिन यह तुम्हारा घर है.
+
+[line_02.wav]
+  EN: Yeah, it's from that top of that.
+  HI: हाँ, यह उस शीर्ष से है.
+
+[line_03.wav]
+  EN: Like giving you a choice.
+  HI: आप एक विकल्प देने की तरह.
+
+[line_04.wav]
+  EN: Elevate your hands.
+  HI: अपने हाथ ऊंचा.
+
+[line_05.wav]
+  EN: Your voice, dilapidated your cross hairs.
+  HI: अपनी आवाज, अपने क्रूस बालों को कमजोर किया.
+
+[line_06.wav]
+  EN: And for all this time, this little feel like home.
+  HI: और इस पूरे समय के लिए, इस छोटे से घर की तरह लग रहा है.
+
+[line_07.wav]
+  EN: I cast my third eye.
+  HI: मैं अपनी तीसरी आँख फेंक दिया.
+
+[line_08.wav]
+  EN: Use your brain, scack!
+  HI: अपने दिमाग का प्रयोग करें, कैंच!
+
+[line_09.wav]
+  EN: Head up and slow on cloud.
+  HI: बादल पर सिर और धीमी गति से.
+
+[line_10.wav]
+  EN: That's what's on.
+  HI: यही कारण है कि क्या हो रहा है.
+
+[line_11.wav]
+  EN: You're written to a little better than this.
+  HI: आप इस से एक छोटे से बेहतर के लिए लिखा गया है.
+
+[line_12.wav]
+  EN: A little better than that.
+  HI: यह उससे थोड़ा बेहतर है.
+
+[line_13.wav]
+  EN: I saw my gun.
+  HI: मैं अपनी बंदूक देखा.
+
+[line_14.wav]
+  EN: I'm gonna be the one to be caught up up with you.
+  HI: मैं आप के साथ पकड़ा जा करने के लिए एक होने वाला हूँ.
+
+[line_15.wav]
+  EN: Here it is.
+  HI: यहाँ यह है.
+
+[line_16.wav]
+  EN: Time radiation down with the impossible plan to be here.
+  HI: समय विकिरण यहाँ होने के लिए असंभव योजना के साथ नीचे.
+
+[line_17.wav]
+  EN: My voice, elevate your hands.
+  HI: मेरी आवाज, अपने हाथ ऊंचा.
+

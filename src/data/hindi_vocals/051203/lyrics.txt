@@ -1,0 +1,68 @@
+[line_01.wav]
+  EN: I'm having a nightmare quite late in my stature
+  HI: मैं अपने कद में काफी देर हो रही है एक सपना हो रहा है
+
+[line_02.wav]
+  EN: The year of the potato maturing
+  HI: गर्भ में पल रहे बच्चे का साल
+
+[line_03.wav]
+  EN: And when his job is gathered in
+  HI: और जब कर्म-पत्र जमा किया जाता है
+
+[line_04.wav]
+  EN: You'll be getting together, getting caught
+  HI: आप एक साथ हो रही हो जाएगा, पकड़ा जा रहा है
+
+[line_05.wav]
+  EN: A man of the depending on the cards
+  HI: पत्तों के आधार पर एक आदमी
+
+[line_06.wav]
+  EN: You'll be able to do as bother
+  HI: आप मुसीबत के रूप में करने में सक्षम हो जाएगा
+
+[line_07.wav]
+  EN: Who's the boss, and he begotten
+  HI: मालिक कौन है, और वह जन्म लिया
+
+[line_08.wav]
+  EN: That is about to rather rock and order drought
+  HI: यह चट्टान और व्यवस्था सूखे के बारे में है
+
+[line_09.wav]
+  EN: You dance as better than ever
+  HI: आप कभी की तरह बेहतर नृत्य
+
+[line_10.wav]
+  EN: For us in love, it's actually
+  HI: प्यार में हमारे लिए, यह वास्तव में है
+
+[line_11.wav]
+  EN: A box for keeping in 16
+  HI: 16 में बने रहने के लिए एक बॉक्स
+
+[line_12.wav]
+  EN: A bit of feast at top for penis
+  HI: पेन्स के लिए शीर्ष पर दावत का एक सा
+
+[line_13.wav]
+  EN: Sorry for our problem, Dexing
+  HI: हमारी समस्या के लिए क्षमा करें, Deक्सिंग
+
+[line_14.wav]
+  EN: And I was talking about the water on danger
+  HI: और मैं खतरे पर पानी के बारे में बात कर रहा था
+
+[line_15.wav]
+  EN: A bit of an inspiration, a bit of passion
+  HI: एक प्रेरणा का एक छोटा जुनून
+
+[line_16.wav]
+  EN: When you're dancing with a hat
+  HI: आप एक टोपी के साथ नृत्य कर रहे हैं जब
+
+[line_17.wav]
+  EN: Who is very friendly, fat about the yard
+  HI: जो बहुत मैत्रीपूर्ण है, आँगन के बारे में मोटा है
+

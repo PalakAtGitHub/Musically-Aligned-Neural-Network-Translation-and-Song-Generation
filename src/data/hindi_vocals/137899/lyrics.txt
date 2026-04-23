@@ -1,0 +1,68 @@
+[line_01.wav]
+  EN: Find the pen stands for test of time's effects
+  HI: समय के प्रभाव की परीक्षा के लिए कलम का पता
+
+[line_02.wav]
+  EN: Reflects the fact
+  HI: तथ्य को प्रतिबिम्बित करता है
+
+[line_03.wav]
+  EN: Composed fresh flows like prose by Vonnegut
+  HI: वोनेगुट द्वारा गद्य की तरह ताजा प्रवाह
+
+[line_04.wav]
+  EN: The press specializes in eight to the learners
+  HI: कक्षा में आठ से लेकर विद्यार्थियों तक विशेष प्रदर्शनों को प्रेस करता है
+
+[line_05.wav]
+  EN: Like Grammys, he's rolling pages of burners
+  HI: ग्राम की तरह, वह बर्नर के चल रहा है पृष्ठ है
+
+[line_06.wav]
+  EN: It's Mauritius to coalesce
+  HI: यह कोयले के लिए मारीशस है
+
+[line_07.wav]
+  EN: Read recite reflect
+  HI: पढ़ने का तरीका
+
+[line_08.wav]
+  EN: Trust just that
+  HI: बस उस पर भरोसा करें
+
+[line_09.wav]
+  EN: I implore the hero
+  HI: मैं नायक को प्रार्थना करता हूँ
+
+[line_10.wav]
+  EN: Each second is pressure packed
+  HI: हर एक सेकंड दबाव पैक है
+
+[line_11.wav]
+  EN: That stack fast
+  HI: कि स्टैक तेज
+
+[line_12.wav]
+  EN: Traveled by test of racked
+  HI: परेशान लोगों की परीक्षा से यात्रा
+
+[line_13.wav]
+  EN: Like Madeline said
+  HI: जैसा कैनिकल ने कहा
+
+[line_14.wav]
+  EN: I'm battling the status quo
+  HI: मैं स्थिति quo से संघर्ष कर रहा हूँ
+
+[line_15.wav]
+  EN: When the ground heads come to over
+  HI: जब ज़मीन बड़े ज़ोरों के साथ ज़लज़ले में आ जाते हैं
+
+[line_16.wav]
+  EN: Throw the radio
+  HI: रेडियो गिरा दो
+
+[line_17.wav]
+  EN: Cameo by time's own rhymes on the cut
+  HI: काट पर समय की खुद की कविताओं द्वारा कैमियो
+

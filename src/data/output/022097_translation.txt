@@ -1,0 +1,6 @@
+EN: Can be over me
+HI: मेरे ऊपर हो सकता है।
+
+EN: Before I'm over you
+HI: मैं आप खत्म हो रहा हूँ।
+

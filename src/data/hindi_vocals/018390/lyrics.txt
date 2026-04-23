@@ -1,0 +1,76 @@
+[line_01.wav]
+  EN: But it's ridiculous now.
+  HI: लेकिन यह अब हास्यास्पद है.
+
+[line_02.wav]
+  EN: So somebody's going to say, well, Nikki,
+  HI: तो किसी को कहने जा रहा है, अच्छी तरह, निक्की,
+
+[line_03.wav]
+  EN: because I don't have another solution.
+  HI: क्योंकि मेरे पास एक और हल नहीं है.
+
+[line_04.wav]
+  EN: I know we can do better.
+  HI: मैं हम बेहतर कर सकते हैं पता है.
+
+[line_05.wav]
+  EN: I know that whatever it is, I know prison is a bad idea,
+  HI: मुझे पता है कि यह जो भी है, मैं जेल एक बुरा विचार है जानता हूँ,
+
+[line_06.wav]
+  EN: because people build prisons.
+  HI: क्योंकि लोग जेलों का निर्माण करते हैं.
+
+[line_07.wav]
+  EN: And they build these big buildings way out in the middle
+  HI: और वे इन बड़ी इमारतों को बीच में बाहर निर्माण
+
+[line_08.wav]
+  EN: of nowhere with all of these gates.
+  HI: इन सभी द्वार के साथ कहीं नहीं.
+
+[line_09.wav]
+  EN: And they put people in them.
+  HI: और वे उन में लोगों को डाल दिया.
+
+[line_10.wav]
+  EN: And they're supposed to what?
+  HI: और वे क्या करने की अपेक्षा कर रहे हैं?
+
+[line_11.wav]
+  EN: Come back 20 years from now saying.
+  HI: अब से 20 साल वापस आ जाओ.
+
+[line_12.wav]
+  EN: what we going to do with these people
+  HI: हम इन लोगों के साथ क्या करने जा रहा है
+
+[line_13.wav]
+  EN: that commit these crimes?
+  HI: कि इन अपराध करते हैं?
+
+[line_14.wav]
+  EN: I don't know.
+  HI: मैं नहीं जानता.
+
+[line_15.wav]
+  EN: I'm just support.
+  HI: मैं सिर्फ समर्थन कर रहा हूँ.
+
+[line_16.wav]
+  EN: I don't have to know.
+  HI: मुझे पता नहीं है.
+
+[line_17.wav]
+  EN: But I do know this.
+  HI: लेकिन मैं यह जानता हूँ.
+
+[line_18.wav]
+  EN: What I know is not a good idea.
+  HI: मैं क्या जानता हूँ एक अच्छा विचार नहीं है.
+
+[line_19.wav]
+  EN: I don't have to pretend it's OK,
+  HI: मैं यह ठीक है नाटक करने के लिए नहीं है,
+

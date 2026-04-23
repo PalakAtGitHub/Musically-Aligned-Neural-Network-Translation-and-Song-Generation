@@ -1,0 +1,52 @@
+[line_01.wav]
+  EN: Take my golden moon, rub my luster, take my luck,
+  HI: मेरे सोने के चाँद ले लो, मेरी किस्मत ले जाओ,
+
+[line_02.wav]
+  EN: take my counting school, wreck my last,
+  HI: मेरे गिनती स्कूल ले लो, मेरे पिछले नष्ट,
+
+[line_03.wav]
+  EN: roll around the dust,
+  HI: (तो दौड़ धूप से) बुलन्द कर देते हैं
+
+[line_04.wav]
+  EN: roll around the dust,
+  HI: (तो दौड़ धूप से) बुलन्द कर देते हैं
+
+[line_05.wav]
+  EN: roll around the dust,
+  HI: (तो दौड़ धूप से) बुलन्द कर देते हैं
+
+[line_06.wav]
+  EN: block my life, jump right up my hill,
+  HI: मेरे जीवन ब्लॉक, सही मेरे पहाड़ी ऊपर कूद,
+
+[line_07.wav]
+  EN: warm my nose, keep my heart, keep my soul,
+  HI: मेरी नाक गर्म, मेरे दिल को सुरक्षित रखो, मेरी आत्मा की रक्षा करो,
+
+[line_08.wav]
+  EN: reach my hands, get out my soul,
+  HI: मेरे हाथों तक, मेरे आत्मा बाहर निकलो,
+
+[line_09.wav]
+  EN: at all, turn them off,
+  HI: उन्हें बंद कर दो,
+
+[line_10.wav]
+  EN: save my look, of my shell,
+  HI: मेरे सीने की मेरी नज़र,
+
+[line_11.wav]
+  EN: take my peace,
+  HI: मेरी शांति ले लो,
+
+[line_12.wav]
+  EN: cut, roll my bow,
+  HI: काट, मेरे धनुष रोल,
+
+[line_13.wav]
+  EN: ring my bell,
+  HI: मेरी घंटी बजे,
+

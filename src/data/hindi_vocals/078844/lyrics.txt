@@ -1,0 +1,56 @@
+[line_01.wav]
+  EN: Selva da mundo conhecido
+  HI: सेल्वा दा मुड़ो कोहेसीडो
+
+[line_02.wav]
+  EN: Outdoor by theりpick
+  HI: प्रधान सलाहकार द्वारा घर - मालिक
+
+[line_03.wav]
+  EN: Simu cordãm pica
+  HI: फिकू बिस्कुका
+
+[line_04.wav]
+  EN: C'mon, there isn't breakfast
+  HI: चलो, वहाँ नाश्ता नहीं है
+
+[line_05.wav]
+  EN: those eyeboats have grown exaggerated
+  HI: उन आँखों की नावें ज़्यादा तेज़ हो गयी हैं
+
+[line_06.wav]
+  EN: in my mood
+  HI: मेरी मनोवृत्ति में
+
+[line_07.wav]
+  EN: Sling of Seven
+  HI: सात का सामना
+
+[line_08.wav]
+  EN: Angel of theade
+  HI: अन्तिम दिनों का स्वर्गदूत
+
+[line_09.wav]
+  EN: Demone of the harp
+  HI: राक्षस की हार्प
+
+[line_10.wav]
+  EN: Simu cordãm pica
+  HI: फिकू बिस्कुका
+
+[line_11.wav]
+  EN: Outdoor by theりpick
+  HI: प्रधान सलाहकार द्वारा घर - मालिक
+
+[line_12.wav]
+  EN: Sling of Seven
+  HI: सात का सामना
+
+[line_13.wav]
+  EN: Angel of theade
+  HI: अन्तिम दिनों का स्वर्गदूत
+
+[line_14.wav]
+  EN: Hands in pica
+  HI: क्यूिका में हाथ
+

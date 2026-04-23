@@ -23,37 +23,22 @@ def syllable_accuracy(predictions, targets):
     Returns:
         accuracy: Percentage of predictions within +/-2 syllables
     """
-    if len(predictions) == 0:
-        return 0.0
-
     correct = 0
-    for pred_text, target_count in zip(predictions, targets):
-        pred_count = count_hindi_syllables(pred_text)
-        if abs(pred_count - target_count) <= 2:
+    for pred, target in zip(predictions, targets):
+        pred_syllables = count_hindi_syllables(pred)
+        if abs(pred_syllables - target) <= 2:
             correct += 1
-
-    return correct / len(predictions)
+    return correct / max(len(predictions), 1)
 
 
 def compute_bert_score(predictions, references, lang="hi"):
-    """
-    Compute BERTScore for Hindi translations.
-
-    Args:
-        predictions: List of generated Hindi texts
-        references: List of reference Hindi texts
-        lang: Language code (default "hi" for Hindi)
-
-    Returns:
-        dict with precision, recall, f1 (each as mean float)
-    """
+    """Compute BERTScore for Hindi translations."""
     try:
-        from bert_score import score as bert_score_fn
-        P, R, F1 = bert_score_fn(
+        from bert_score import score as bert_score
+        P, R, F1 = bert_score(
             predictions, references,
             lang=lang,
-            verbose=False,
-            rescale_with_baseline=True
+            verbose=False
         )
         return {
             'precision': P.mean().item(),
@@ -65,19 +50,22 @@ def compute_bert_score(predictions, references, lang="hi"):
         return {'precision': 0.0, 'recall': 0.0, 'f1': 0.0}
 
 
-def evaluate_model(model, test_data, tokenizer):
+def evaluate_model(model, test_data, tokenizer=None):
     """
     Compute all automatic metrics on test data.
 
     Args:
         model: Trained MCNST model
         test_data: List of example dicts (from training_data.pt)
-        tokenizer: MBart50TokenizerFast instance
+        tokenizer: Tokenizer instance (defaults to model.tokenizer)
 
     Returns:
         dict with BLEU, BERTScore (P/R/F1), Syllable_Accuracy,
         Avg_Syllable_Error, Predictions, References
     """
+    if tokenizer is None:
+        tokenizer = model.tokenizer
+
     predictions = []
     references = []
     syllable_errors = []
@@ -89,16 +77,15 @@ def evaluate_model(model, test_data, tokenizer):
             src_ids = example['src_ids'].unsqueeze(0)
             melody = example['melody_features'].unsqueeze(0)
 
-            tokenizer.src_lang = "hi_IN"
             generated_ids = model.generate(
                 input_ids=src_ids,
                 melody_features=melody,
                 max_length=50,
                 num_beams=5,
-                forced_bos_token_id=tokenizer.lang_code_to_id["hi_IN"]
             )
 
         pred_text = tokenizer.decode(generated_ids[0], skip_special_tokens=True)
+        pred_text = model.postprocess_tgt(pred_text)[0]
         ref_text = example['hindi_text']
 
         predictions.append(pred_text)
@@ -139,7 +126,6 @@ def evaluate_model(model, test_data, tokenizer):
 if __name__ == "__main__":
     import os
     from pathlib import Path
-    from transformers import MBart50TokenizerFast
     from src.models.mcnst_model import MCNST
 
     PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -155,9 +141,7 @@ if __name__ == "__main__":
     model.load_state_dict(state, strict=False)
     model.eval()
 
-    tokenizer = MBart50TokenizerFast.from_pretrained(
-        "facebook/mbart-large-50-many-to-many-mmt"
-    )
+    tokenizer = model.tokenizer
 
     test_data = torch.load("src/data/processed/training_data.pt", weights_only=False)
 

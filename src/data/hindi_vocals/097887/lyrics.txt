@@ -1,0 +1,56 @@
+[line_01.wav]
+  EN: They are still going to come out of the earth.
+  HI: वे अभी भी पृथ्वी से निकल रहे हैं.
+
+[line_02.wav]
+  EN: They must stop talking to you.
+  HI: वे आप से बात करना बंद करना चाहिए.
+
+[line_03.wav]
+  EN: go out and farts,
+  HI: और ग़ायब होते हैं
+
+[line_04.wav]
+  EN: go out and farts,
+  HI: और ग़ायब होते हैं
+
+[line_05.wav]
+  EN: go out and farts,
+  HI: और ग़ायब होते हैं
+
+[line_06.wav]
+  EN: go out and farts,
+  HI: और ग़ायब होते हैं
+
+[line_07.wav]
+  EN: Up in the sun,
+  HI: सूरज की क़समों में,
+
+[line_08.wav]
+  EN: those who farts,
+  HI: जो (कुफ्फ़ार की रूह) डूब कर सख्ती से खींच लेते हैं
+
+[line_09.wav]
+  EN: such who farts,
+  HI: जो (कुफ्फ़ार की रूह) डूब कर सख्ती से खींच लेते हैं
+
+[line_10.wav]
+  EN: such who farts,
+  HI: जो (कुफ्फ़ार की रूह) डूब कर सख्ती से खींच लेते हैं
+
+[line_11.wav]
+  EN: go out and farts,
+  HI: और ग़ायब होते हैं
+
+[line_12.wav]
+  EN: go out and farts,
+  HI: और ग़ायब होते हैं
+
+[line_13.wav]
+  EN: go out and farts,
+  HI: और ग़ायब होते हैं
+
+[line_14.wav]
+  EN: go out and farts,
+  HI: और ग़ायब होते हैं
+

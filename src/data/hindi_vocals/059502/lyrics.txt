@@ -1,0 +1,52 @@
+[line_01.wav]
+  EN: A little Ford machine.
+  HI: एक छोटी सी चला मशीन.
+
+[line_02.wav]
+  EN: We'll find a little hearted weather,
+  HI: हम एक छोटे से दिलवाला मौसम देखेंगे,
+
+[line_03.wav]
+  EN: You're a moments of love.
+  HI: आप प्यार के एक क्षण हैं.
+
+[line_04.wav]
+  EN: And unable to forget your last used time
+  HI: और आपके पिछले समय को भूल नहीं सकते
+
+[line_05.wav]
+  EN: and you can only look through that girm守
+  HI: और आप केवल कि grom के माध्यम से देख सकते हैं
+
+[line_06.wav]
+  EN: roses bloom with the polar and the kitchen and a dining room.
+  HI: जब हम वहाँ पहुँचते हैं ।
+
+[line_07.wav]
+  EN: And we'll have to see that the drone for three.
+  HI: और हम देखेंगे कि तीन के लिए ड्रोन देखना होगा.
+
+[line_08.wav]
+  EN: Oh, you know what I mean.
+  HI: ओह, तुम्हें पता है मैं क्या मतलब है.
+
+[line_09.wav]
+  EN: When we're married, when we're married,
+  HI: जब हमारी शादी होती है, जब हम शादी कर रहे हैं,
+
+[line_10.wav]
+  EN: we'll go down to cook.
+  HI: हम खाना बनाने के लिए नीचे जाना होगा.
+
+[line_11.wav]
+  EN: Takes its time to get into the beautiful hearted野まあ
+  HI: सुन्दर दिल की गहराई तक पहुँचने के लिए अपना समय लेता है
+
+[line_12.wav]
+  EN: The thoughts and feelings of thinking go alrəst
+  HI: सोचने के विचार और भावनाओं को हमेशा जाना
+
+[line_13.wav]
+  EN: You are a real pilot.
+  HI: आप एक असली पायलट हैं.
+
