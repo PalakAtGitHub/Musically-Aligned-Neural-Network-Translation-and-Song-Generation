@@ -24,6 +24,7 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
 from src.models.hierarchical_melody_encoder import HierarchicalMelodyEncoder
 from src.models.fusion import CrossModalFusion
+from src.models.alignment import LearnedAlignment
 from src.training.loss import PentathlonLoss
 from src.utils.syllable_utils import count_hindi_syllables
 from src.utils.phoneme_utils import rhyme_similarity
@@ -116,6 +117,19 @@ class MCNST(nn.Module):
             melody_dim=melody_hidden
         )
 
+        # 8a: learned soft alignment between decoder output positions and
+        # melody notes. Produces an [B, T_out, N] matrix where each row is a
+        # probability distribution over notes, used by cluster_loss and
+        # openness_reward to combine token-level and note-level features.
+        print("  ✓ Initializing learned alignment module (8a)...")
+        self.aligner = LearnedAlignment(
+            text_dim=self.text_dim,
+            melody_dim=melody_hidden,
+            attn_dim=256,
+            num_heads=4,
+            dropout=0.1,
+        )
+
         # === LOSS ===
         # Pass tokenizer so PentathlonLoss can build the vowel-bearing-token
         # mask needed for the differentiable syllable/rhythm losses.
@@ -200,6 +214,10 @@ class MCNST(nn.Module):
             encoder_outputs: BaseModelOutput with fused last_hidden_state
             attention_mask:  [batch, seq_len]
             attn_weights:    [batch, seq_len, num_notes] fusion attention map
+            melody_encoded:  [batch, num_notes, melody_dim] raw melody
+                             features (needed by the 8a alignment module
+                             as attention keys/values)
+            melody_mask:     [batch, num_notes] True = padding
         """
         attention_mask = (input_ids != self.pad_token_id).long()
 
@@ -232,7 +250,7 @@ class MCNST(nn.Module):
         # 6. Replace encoder output — decoder now sees melody-aware representations
         encoder_outputs.last_hidden_state = fused_features
 
-        return encoder_outputs, attention_mask, attn_weights
+        return encoder_outputs, attention_mask, attn_weights, melody_encoded, melody_mask
 
     # ================================================================
     # TRAINING
@@ -247,9 +265,8 @@ class MCNST(nn.Module):
         English → IndicTrans2 encoder (frozen) → fuse with melody → decoder → Hindi
         """
         # Encode English + fuse with melody
-        encoder_outputs, attention_mask, attn_weights = self._encode_and_fuse(
-            input_ids, melody_features
-        )
+        encoder_outputs, attention_mask, attn_weights, melody_encoded, melody_mask = \
+            self._encode_and_fuse(input_ids, melody_features)
 
         if labels is not None:
             # === TRAINING MODE ===
@@ -257,11 +274,22 @@ class MCNST(nn.Module):
                 encoder_outputs=encoder_outputs,
                 attention_mask=attention_mask,
                 labels=labels,
+                output_hidden_states=True,   # 8a: needed for alignment
                 return_dict=True
             )
 
             translation_loss = outputs.loss
             logits = outputs.logits
+
+            # 8a: compute soft alignment from decoder's last hidden state
+            # to the raw melody features. Produces [B, T_out, N] matrix.
+            # decoder_hidden_states is a tuple; [-1] is the last layer.
+            decoder_last_hidden = outputs.decoder_hidden_states[-1]
+            alignment = self.aligner(
+                decoder_hidden=decoder_last_hidden,
+                melody_encoded=melody_encoded,
+                melody_mask=melody_mask,
+            )
 
             # Pass all available signals to PentathlonLoss.
             # NB: with the gradient-fixed loss, the syllable target comes from
@@ -273,6 +301,7 @@ class MCNST(nn.Module):
                 logits=logits,
                 labels=labels,
                 melody_features=melody_features,
+                alignment=alignment,   # 8a
             )
             if num_notes is not None:
                 loss_kwargs['num_notes'] = num_notes.float()
@@ -304,6 +333,10 @@ class MCNST(nn.Module):
         """
         generation_kwargs.setdefault('repetition_penalty', 2.5)
         generation_kwargs.setdefault('no_repeat_ngram_size', 2)
+        # IndicTrans2's remote code has a bug where to_legacy_cache()
+        # returns tuples with None entries, crashing beam search.
+        # Disabling KV cache avoids the issue (slower but correct).
+        generation_kwargs.setdefault('use_cache', False)
 
         if use_diverse_beam:
             num_beams = generation_kwargs.get('num_beams', 6)
@@ -311,7 +344,7 @@ class MCNST(nn.Module):
             generation_kwargs.setdefault('diversity_penalty', 1.0)
             generation_kwargs['num_beams'] = num_beams
 
-        encoder_outputs, attention_mask, _ = self._encode_and_fuse(
+        encoder_outputs, attention_mask, _, _, _ = self._encode_and_fuse(
             input_ids, melody_features
         )
 
@@ -334,7 +367,7 @@ class MCNST(nn.Module):
         gen_kwargs.setdefault('repetition_penalty', 2.5)
         gen_kwargs.setdefault('no_repeat_ngram_size', 2)
 
-        encoder_outputs, attention_mask, _ = self._encode_and_fuse(
+        encoder_outputs, attention_mask, _, _, _ = self._encode_and_fuse(
             input_ids, melody_features
         )
 
@@ -383,10 +416,12 @@ class MCNST(nn.Module):
                 input_ids=input_ids,
                 max_length=generation_kwargs.get('max_length', 50),
                 num_beams=generation_kwargs.get('num_beams', 5),
+                use_cache=False,
             )
 
         # STAGE 2: Musical adaptation
-        encoder_outputs, attention_mask, _ = self._encode_and_fuse(
+        generation_kwargs.setdefault('use_cache', False)
+        encoder_outputs, attention_mask, _, _, _ = self._encode_and_fuse(
             draft_ids, melody_features
         )
 
@@ -447,7 +482,7 @@ class SyllableConstrainedBeamSearch:
                  syllable_penalty=3.0):
         # Encode + fuse melody ONCE
         with torch.no_grad():
-            encoder_outputs, attention_mask, _ = self.model._encode_and_fuse(
+            encoder_outputs, attention_mask, _, _, _ = self.model._encode_and_fuse(
                 input_ids, melody_features
             )
 

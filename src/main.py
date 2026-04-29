@@ -395,7 +395,7 @@ def evaluate():
 
     model = load_trained_model("checkpoints/best_model.pt")
     tokenizer = model.tokenizer
-    data = torch.load("src/data/processed/fma_train_data.pt", weights_only=False)
+    data = torch.load("src/data/processed/fma_test_data.pt", weights_only=False)
     scorer = SingScore()
 
     hindi_lines, english_lines, notes_list, references = [], [], [], []

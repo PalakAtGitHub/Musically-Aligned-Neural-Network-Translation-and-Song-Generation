@@ -154,6 +154,10 @@ class Trainer:
                 postfix['rhy'] = f"{loss_dict['rhythm_loss']:.3f}"
             if loss_dict.get('rhyme_loss', 0) > 0:
                 postfix['rhm'] = f"{loss_dict['rhyme_loss']:.3f}"
+            if 'cluster_loss' in loss_dict:
+                postfix['clst'] = f"{loss_dict['cluster_loss']:.3f}"
+            if 'openness_loss' in loss_dict:
+                postfix['open'] = f"{loss_dict['openness_loss']:.4f}"
             pbar.set_postfix(postfix)
 
         return total_loss / len(self.train_loader)

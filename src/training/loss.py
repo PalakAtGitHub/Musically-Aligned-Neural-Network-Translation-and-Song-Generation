@@ -35,6 +35,77 @@ import torch.nn.functional as F
 
 
 # ============================================================================
+# Phoneme-feature table loader (8a: cluster_loss and openness_reward)
+# ============================================================================
+# The precomputed file lives at src/data/processed/token_phoneme_table.pt
+# and is built by src/utils/precompute_token_phonemes.py. It contains per-
+# token features derived from espeak-ng phonemization:
+#   - n_leading_consonants:  how many consonants come before the first vowel
+#   - ends_in_open_vowel:    1.0 if the token ends in an open projection vowel
+#   - has_vowel:             1.0 if the token contains any vowel (unused here)
+# Shape is [vocab_size] where vocab_size matches the LM head output dim.
+
+_PHONEME_TABLE_CACHE = {}  # device-keyed cache
+
+
+def _load_phoneme_features(device, expected_vocab_size=None):
+    """
+    Load the precomputed phoneme-feature table and return a dict of tensors
+    on the requested device. Caches per-device.
+
+    Returns None if the file is missing (caller should fall back to a
+    uniform approximation and print a warning exactly once).
+    """
+    from pathlib import Path
+
+    cache_key = str(device)
+    if cache_key in _PHONEME_TABLE_CACHE:
+        return _PHONEME_TABLE_CACHE[cache_key]
+
+    # The file is at <project_root>/src/data/processed/token_phoneme_table.pt
+    # We're inside <project_root>/src/training/loss.py — walk up two dirs.
+    here = Path(__file__).resolve().parent
+    table_path = here.parent / "data" / "processed" / "token_phoneme_table.pt"
+
+    if not table_path.exists():
+        print(f"  ⚠ phoneme table not found at {table_path}")
+        print(f"    run: python -m src.utils.precompute_token_phonemes")
+        print(f"    cluster_loss and openness_reward will use uniform fallback")
+        _PHONEME_TABLE_CACHE[cache_key] = None
+        return None
+
+    try:
+        table = torch.load(table_path, map_location=device, weights_only=False)
+    except Exception as e:
+        print(f"  ⚠ failed to load phoneme table ({e}) — using uniform fallback")
+        _PHONEME_TABLE_CACHE[cache_key] = None
+        return None
+
+    # Sanity-check shape against caller's expected vocab size
+    if expected_vocab_size is not None:
+        actual = table['n_leading_consonants'].size(0)
+        if actual != expected_vocab_size:
+            print(f"  ⚠ phoneme table has vocab_size {actual} but logits "
+                  f"have dim {expected_vocab_size}")
+            print(f"    re-run: python -m src.utils.precompute_token_phonemes")
+            _PHONEME_TABLE_CACHE[cache_key] = None
+            return None
+
+    features = {
+        'n_leading_consonants': table['n_leading_consonants'].to(device),
+        'ends_in_open_vowel':   table['ends_in_open_vowel'].to(device),
+        'has_vowel':            table['has_vowel'].to(device),
+    }
+    n_vowel = int(features['has_vowel'].sum())
+    n_open  = int(features['ends_in_open_vowel'].sum())
+    vocab   = features['has_vowel'].size(0)
+    print(f"  ✓ phoneme table loaded ({vocab} tokens, {n_vowel} with vowel, "
+          f"{n_open} ending in open vowel)")
+    _PHONEME_TABLE_CACHE[cache_key] = features
+    return features
+
+
+# ============================================================================
 # Vowel-bearing-token mask (cached at module level — built once per tokenizer)
 # ============================================================================
 # A "vowel-bearing" token is one that, when decoded, contains at least one
@@ -55,21 +126,32 @@ _DEVANAGARI_VOWEL_RE = re.compile(
 _VOWEL_MASK_CACHE = {}
 
 
-def _build_vowel_mask(tokenizer, device):
+def _build_vowel_mask(tokenizer, device, vocab_size=None):
     """
     Build a [vocab_size] float tensor where entry v = 1.0 iff decoded token v
     contains at least one Devanagari vowel character.
 
-    Cached per (tokenizer-id, device). Falls back to all-ones if anything
-    fails (which makes the expected-syllable estimate proportional to the
-    number of non-pad tokens — still gradient-bearing, just noisier).
+    IMPORTANT: IndicTrans2's LM head outputs logits of size config.vocab_size
+    (~122672 — the combined Indic-languages vocab), NOT len(tokenizer)
+    (~32322 — just the Hindi-facing vocab). The mask must match the logits
+    dimension, so we iterate over ALL ids 0..vocab_size-1. For ids the Hindi
+    tokenizer can't decode (because they belong to Bengali/Tamil/etc.) we
+    get an empty string, which correctly yields mask=0 — those tokens have
+    near-zero probability at inference anyway because the model was trained
+    in Hindi mode.
+
+    Cached per (tokenizer-id, device, vocab_size). Falls back to all-ones if
+    anything fails.
     """
-    cache_key = (id(tokenizer), str(device))
+    cache_key = (id(tokenizer), str(device), vocab_size)
     if cache_key in _VOWEL_MASK_CACHE:
         return _VOWEL_MASK_CACHE[cache_key]
 
     try:
-        vocab_size = len(tokenizer)
+        # Use the caller-provided vocab_size (which should be the LM head
+        # output dim). Fall back to len(tokenizer) only if not given.
+        if vocab_size is None:
+            vocab_size = len(tokenizer)
         # IndicTrans2 has separate src/tgt vocabs — switch to target mode so
         # we inspect Hindi-side tokens. Safe no-op for single-vocab tokenizers.
         switched = False
@@ -108,8 +190,8 @@ def _build_vowel_mask(tokenizer, device):
         return mask
     except Exception as e:
         print(f"  ⚠ vowel-mask build failed ({e}) — using uniform mask")
-        vocab_size = getattr(tokenizer, 'vocab_size', 50000)
-        mask = torch.ones(vocab_size, device=device)
+        fallback_size = vocab_size or 50000
+        mask = torch.ones(fallback_size, device=device)
         _VOWEL_MASK_CACHE[cache_key] = mask
         return mask
 
@@ -169,6 +251,11 @@ class PentathlonLoss(nn.Module):
         self.log_var_naturalness = nn.Parameter(torch.tensor(0.0))
         self.log_var_rhythm      = nn.Parameter(torch.tensor(0.0))
         self.log_var_rhyme       = nn.Parameter(torch.tensor(-1.0))
+        # 8a additions: start them down-weighted (log_var = 1 => weight = 1/e ≈ 0.37)
+        # so the new terms don't dominate the untrained model's loss landscape
+        # before the melody encoder and alignment module learn anything useful.
+        self.log_var_cluster     = nn.Parameter(torch.tensor(1.0))
+        self.log_var_openness    = nn.Parameter(torch.tensor(1.0))
 
         self.pad_token_id = pad_token_id
         self.label_smoothing = label_smoothing
@@ -187,16 +274,30 @@ class PentathlonLoss(nn.Module):
             self.pad_token_id = pad_token_id
         self._vowel_mask = None  # force rebuild on next forward
 
-    def _get_vowel_mask(self, device):
-        """Lazy-build and cache the vowel-bearing-token mask."""
-        if self._vowel_mask is not None and self._vowel_mask.device == device:
+    def _get_vowel_mask(self, device, vocab_size=None):
+        """Lazy-build and cache the vowel-bearing-token mask.
+
+        `vocab_size` should be the LM head output dim (the last dim of the
+        logits tensor). This is usually bigger than len(tokenizer) for
+        multilingual models like IndicTrans2 — see _build_vowel_mask for
+        the full explanation.
+        """
+        # Cache key incorporates vocab_size because different callers might
+        # ask for the mask at different sizes (unlikely but safe).
+        target_size = vocab_size if vocab_size is not None else (
+            len(self._tokenizer) if self._tokenizer is not None else 50000
+        )
+        if (self._vowel_mask is not None
+            and self._vowel_mask.device == device
+            and self._vowel_mask.size(0) == target_size):
             return self._vowel_mask
         if self._tokenizer is None:
             # Fallback: uniform mask (syllable loss then tracks sequence length)
-            vocab = 50000
-            self._vowel_mask = torch.ones(vocab, device=device)
+            self._vowel_mask = torch.ones(target_size, device=device)
             return self._vowel_mask
-        self._vowel_mask = _build_vowel_mask(self._tokenizer, device)
+        self._vowel_mask = _build_vowel_mask(
+            self._tokenizer, device, vocab_size=target_size
+        )
         return self._vowel_mask
 
     # ------------------------------------------------------------------
@@ -207,7 +308,11 @@ class PentathlonLoss(nn.Module):
         Relative squared error between expected syllable count (from logits)
         and target note count.  Differentiable in logits.
         """
-        vowel_mask = self._get_vowel_mask(logits.device)
+        # Mask size must match logits' vocab dim (last axis). For IndicTrans2
+        # this is ~122672, bigger than len(tokenizer) — see _build_vowel_mask.
+        vowel_mask = self._get_vowel_mask(
+            logits.device, vocab_size=logits.size(-1)
+        )
         exp_syl = expected_syllables_from_logits(
             logits, labels, vowel_mask, self.pad_token_id
         )  # [B], gradient flows
@@ -216,6 +321,136 @@ class PentathlonLoss(nn.Module):
         # wildly different target sizes.
         rel_err = (exp_syl - target) / target
         return (rel_err ** 2).mean()
+
+    # ------------------------------------------------------------------
+    # 8a additions: cluster loss and openness reward
+    # ------------------------------------------------------------------
+    def cluster_loss(self, logits, labels, alignment, melody_features):
+        """
+        Penalise predicted tokens with heavy leading consonant clusters on
+        notes with short duration.
+
+        Intuition: a short note sung as a tongue-twister syllable like
+        "स्त्री" (stɾiː — three leading consonants) is unsingable. The same
+        syllable on a long note is fine. So the penalty per note is
+
+          cluster_badness(note n) = expected_leading_consonants_at_n / duration_n
+
+        The expected leading-consonant count at note n is obtained by
+        combining the per-token feature with the decoder's probability of
+        emitting each token at each output position, weighted by the
+        alignment matrix A[t, n] = P(output pos t ↔ note n).
+
+        Differentiable in logits (via softmax) and in alignment (via
+        cross-attention). Both flow back to the model.
+
+        Args:
+            logits:          [B, T_out, V]   decoder logits
+            labels:          [B, T_out]      for padding mask
+            alignment:       [B, T_out, N]   soft alignment matrix
+            melody_features: [B, N, 5]       col 2 = duration_beats
+
+        Returns:
+            scalar loss
+        """
+        B, T_out, V = logits.shape
+        N = alignment.size(-1)
+
+        # Load phoneme features; if missing, return 0 loss (skip the term)
+        feats = _load_phoneme_features(
+            logits.device, expected_vocab_size=V
+        )
+        if feats is None:
+            return torch.tensor(0.0, device=logits.device, requires_grad=True)
+
+        leading_cons_per_token = feats['n_leading_consonants']  # [V]
+
+        # 1. Expected leading-consonant count at each OUTPUT position.
+        #    E_t[leading_cons] = sum_v softmax(logits_t)[v] * leading_cons[v]
+        probs = F.softmax(logits, dim=-1)                   # [B, T_out, V]
+        exp_cons_per_output = (probs * leading_cons_per_token
+                                .unsqueeze(0).unsqueeze(0)).sum(dim=-1)  # [B, T_out]
+
+        # Zero-out padded output positions
+        output_pad_mask = (labels != self.pad_token_id).float()    # [B, T_out]
+        exp_cons_per_output = exp_cons_per_output * output_pad_mask
+
+        # 2. Project from output positions onto note positions via alignment.
+        #    exp_cons_per_note[b, n] = sum_t alignment[b, t, n] * exp_cons_per_output[b, t]
+        #    alignment transposed: [B, N, T_out]; exp_cons_per_output: [B, T_out, 1]
+        exp_cons_per_note = torch.bmm(
+            alignment.transpose(1, 2),               # [B, N, T_out]
+            exp_cons_per_output.unsqueeze(-1),       # [B, T_out, 1]
+        ).squeeze(-1)                                # [B, N]
+
+        # 3. Weight by inverse note duration: short notes hurt more.
+        note_duration = melody_features[:, :, 2].clamp(min=0.25)  # avoid div0
+        note_mask = (melody_features.sum(dim=-1) != 0).float()    # [B, N]
+
+        per_note_penalty = exp_cons_per_note / note_duration       # [B, N]
+        per_note_penalty = per_note_penalty * note_mask
+
+        # Mean over non-padded notes
+        per_example = per_note_penalty.sum(dim=-1) / note_mask.sum(dim=-1).clamp(min=1.0)
+        return per_example.mean()
+
+    def openness_reward(self, logits, labels, alignment, melody_features):
+        """
+        Reward predicted tokens with open-vowel endings on strong-beat notes.
+
+        Intuition: open vowels (aː, eː, oː) sound full when sung loud. Closed
+        consonants on a strong beat (e.g. "त्याक्") sound choked. So we want
+
+          openness_score(note n) = expected_open_ending_at_n * beat_strength_n
+
+        and return its NEGATIVE (so minimising the loss = maximising openness
+        on strong beats).
+
+        Differentiable in logits and alignment.
+
+        Args:
+            logits:          [B, T_out, V]
+            labels:          [B, T_out]
+            alignment:       [B, T_out, N]
+            melody_features: [B, N, 5]       col 4 = beat_strength
+
+        Returns:
+            scalar loss (negative reward)
+        """
+        B, T_out, V = logits.shape
+        N = alignment.size(-1)
+
+        feats = _load_phoneme_features(
+            logits.device, expected_vocab_size=V
+        )
+        if feats is None:
+            return torch.tensor(0.0, device=logits.device, requires_grad=True)
+
+        open_vowel_per_token = feats['ends_in_open_vowel']  # [V], {0, 1}
+
+        # 1. Expected open-ending probability at each OUTPUT position
+        probs = F.softmax(logits, dim=-1)
+        exp_open_per_output = (probs * open_vowel_per_token
+                                .unsqueeze(0).unsqueeze(0)).sum(dim=-1)  # [B, T_out]
+
+        output_pad_mask = (labels != self.pad_token_id).float()
+        exp_open_per_output = exp_open_per_output * output_pad_mask
+
+        # 2. Project onto note positions via alignment
+        exp_open_per_note = torch.bmm(
+            alignment.transpose(1, 2),
+            exp_open_per_output.unsqueeze(-1),
+        ).squeeze(-1)                                # [B, N]
+
+        # 3. Weight by beat strength
+        beat_strength = melody_features[:, :, 4]          # [B, N]
+        note_mask = (melody_features.sum(dim=-1) != 0).float()
+
+        per_note_reward = exp_open_per_note * beat_strength * note_mask
+
+        # Mean over non-padded notes, then negate so lower loss = higher reward
+        per_example = per_note_reward.sum(dim=-1) / note_mask.sum(dim=-1).clamp(min=1.0)
+        return -per_example.mean()
 
     # ------------------------------------------------------------------
     # Pillar 3: Naturalness — label-smoothed NLL (not overconfidence reward)
@@ -289,7 +524,9 @@ class PentathlonLoss(nn.Module):
 
         # Mode B: gradient-bearing, syllable-weighted
         if logits is not None and labels is not None and target_syllables is not None:
-            vowel_mask = self._get_vowel_mask(logits.device)
+            vowel_mask = self._get_vowel_mask(
+                logits.device, vocab_size=logits.size(-1)
+            )
             exp_syl = expected_syllables_from_logits(
                 logits, labels, vowel_mask, self.pad_token_id
             )
@@ -370,6 +607,7 @@ class PentathlonLoss(nn.Module):
                 beat_pattern=None,
                 rhyme_similarities=None,
                 melody_features=None,
+                alignment=None,  # 8a: [B, T_out, N] soft alignment matrix
                 # kept for backwards-compat with callers; ignored
                 predicted_syllables=None,
                 singability_scores=None):
@@ -439,6 +677,34 @@ class PentathlonLoss(nn.Module):
             loss_dict['rhyme_weight'] = float(precision_rh.detach())
         else:
             loss_dict['rhyme_loss'] = 0.0
+
+        # 6. 8a: cluster loss (penalises heavy consonant clusters on short notes)
+        if (logits is not None and labels is not None
+            and alignment is not None and melody_features is not None):
+            clu = self.cluster_loss(logits, labels, alignment, melody_features)
+            if clu.requires_grad or float(clu.detach()) != 0:
+                precision_c = torch.exp(-self.log_var_cluster)
+                total = total + precision_c * clu + self.log_var_cluster
+                loss_dict['cluster_loss']   = float(clu.detach())
+                loss_dict['cluster_weight'] = float(precision_c.detach())
+            else:
+                loss_dict['cluster_loss'] = 0.0
+        else:
+            loss_dict['cluster_loss'] = 0.0
+
+        # 7. 8a: openness reward (rewards open vowels on strong beats)
+        if (logits is not None and labels is not None
+            and alignment is not None and melody_features is not None):
+            opn = self.openness_reward(logits, labels, alignment, melody_features)
+            if opn.requires_grad or float(opn.detach()) != 0:
+                precision_o = torch.exp(-self.log_var_openness)
+                total = total + precision_o * opn + self.log_var_openness
+                loss_dict['openness_loss']   = float(opn.detach())
+                loss_dict['openness_weight'] = float(precision_o.detach())
+            else:
+                loss_dict['openness_loss'] = 0.0
+        else:
+            loss_dict['openness_loss'] = 0.0
 
         loss_dict['total_loss'] = float(total.detach())
         return total, loss_dict

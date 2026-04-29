@@ -243,10 +243,10 @@ def count_english_syllables(text: str) -> int:
 
 def count_hindi_syllables(text: str) -> int:
     """
-    Count syllables in Hindi text
+    Count syllables in Hindi text (Devanagari or romanized)
     
     Args:
-        text: Hindi text in Devanagari
+        text: Hindi text in Devanagari or romanized Latin script
     
     Returns:
         syllable_count: int
@@ -254,8 +254,29 @@ def count_hindi_syllables(text: str) -> int:
     Example:
         >>> count_hindi_syllables("चमक चमक छोटा तारा")
         7
+        >>> count_hindi_syllables("Fanahu fanahu")
+        5
     """
-    return HindiSyllableCounter.count(text)
+    # Check if text contains Devanagari characters
+    devanagari_chars = sum(1 for c in text if 'ऀ' <= c <= 'ॿ')
+    if devanagari_chars > 0:
+        return HindiSyllableCounter.count(text)
+    
+    # Fallback: count syllables in romanized Hindi using vowel-group method
+    # This handles Whisper output that comes out in Latin script
+    words = re.findall(r'\b[a-zA-Z]+\b', text.lower())
+    total = 0
+    hindi_vowels = 'aeiou'
+    for word in words:
+        syllables = 0
+        prev_vowel = False
+        for ch in word:
+            is_v = ch in hindi_vowels
+            if is_v and not prev_vowel:
+                syllables += 1
+            prev_vowel = is_v
+        total += max(1, syllables) if word else 0
+    return total
 
 
 def check_syllable_alignment(english: str, hindi: str, num_notes: int, tolerance: int = 2) -> dict:

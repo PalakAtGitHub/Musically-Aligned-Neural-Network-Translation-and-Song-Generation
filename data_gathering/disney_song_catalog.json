@@ -1,0 +1,285 @@
+{
+  "_comment": "Disney Song Catalog — 40 Hindi/English pairs for musically-aligned translation",
+  "songs": [
+    {
+      "name": "let_it_go_frozen",
+      "title": "Let It Go — Frozen (2013)",
+      "hindi_url": "https://www.youtube.com/watch?v=7QWK0wxFCXA",
+      "english_url": "https://www.youtube.com/watch?v=L0MK7qz13bU",
+      "notes": "Hindi: Sunidhi Chauhan 'Fanna Ho'. English: Idina Menzel sing-along."
+    },
+    {
+      "name": "into_the_unknown_frozen2",
+      "title": "Into the Unknown — Frozen 2 (2019)",
+      "hindi_url": "https://www.youtube.com/watch?v=SmpV8mnBqbM",
+      "english_url": "https://www.youtube.com/watch?v=gIOyB9ZXn8s",
+      "notes": "Hindi: Sunidhi Chauhan official. English: Idina Menzel + AURORA."
+    },
+    {
+      "name": "do_you_want_to_build_a_snowman_frozen",
+      "title": "Do You Want to Build a Snowman — Frozen (2013)",
+      "hindi_url": "https://www.youtube.com/watch?v=s30EOHR2lUA",
+      "english_url": "https://www.youtube.com/watch?v=TeQ_TTyLGMs",
+      "notes": "Hindi: Walt Disney India upload. English: sing-along. Narrative progression song."
+    },
+    {
+      "name": "for_the_first_time_in_forever_frozen",
+      "title": "For the First Time in Forever — Frozen (2013)",
+      "hindi_url": "https://www.youtube.com/watch?v=mf-apK41YGQ",
+      "english_url": "https://www.youtube.com/watch?v=ZrX1XKtShSI",
+      "notes": "Hindi: Walt Disney India. English: Kristen Bell + Idina Menzel sing-along."
+    },
+    {
+      "name": "show_yourself_frozen2",
+      "title": "Show Yourself — Frozen 2 (2019)",
+      "hindi_url": "https://www.youtube.com/watch?v=DmlzDFPe5QI",
+      "english_url": "https://www.youtube.com/watch?v=nrZxwPwmgrw",
+      "notes": "Hindi: Sunidhi Chauhan + Smita Malhotra 'Tu Kon Hai'. English: Idina Menzel + Evan Rachel Wood."
+    },
+    {
+      "name": "some_things_never_change_frozen2",
+      "title": "Some Things Never Change — Frozen 2 (2019)",
+      "hindi_url": "https://www.youtube.com/watch?v=OmolTep4hGk",
+      "english_url": "https://www.youtube.com/watch?v=lqne0zib2D8",
+      "notes": "Hindi: Walt Disney India ensemble. English: official. Family ensemble number."
+    },
+    {
+      "name": "a_whole_new_world_aladdin",
+      "title": "A Whole New World — Aladdin (1992/2019)",
+      "hindi_url": "https://www.youtube.com/watch?v=NO6vyMqOKK4",
+      "english_url": "https://www.youtube.com/watch?v=hZ1Rb9hC4JY",
+      "notes": "Hindi: animated Hindi dub (1992). English: 1992 animated. Duet."
+    },
+    {
+      "name": "friend_like_me_aladdin",
+      "title": "Friend Like Me — Aladdin (1992)",
+      "hindi_url": "https://www.youtube.com/watch?v=KFXjNoj637g",
+      "english_url": "https://www.youtube.com/watch?v=Qx91ff77yzM",
+      "notes": "Hindi: animated dub. English: Robin Williams. Very fast lyrics."
+    },
+    {
+      "name": "prince_ali_aladdin",
+      "title": "Prince Ali — Aladdin (1992)",
+      "hindi_url": "https://www.youtube.com/watch?v=2jAQHiPOsDo",
+      "english_url": "https://www.youtube.com/watch?v=mT_8FAMsmCM",
+      "notes": "Hindi: animated dub. English: HD original. Marching-parade style."
+    },
+    {
+      "name": "arabian_nights_aladdin",
+      "title": "Arabian Nights — Aladdin (1992)",
+      "hindi_url": "https://www.youtube.com/watch?v=zu4ilLIfXx0",
+      "english_url": "https://www.youtube.com/watch?v=lIYL-PQa010",
+      "notes": "Hindi: animated dub. English: HD original. Short — good pipeline test."
+    },
+    {
+      "name": "speechless_aladdin_2019",
+      "title": "Speechless — Aladdin (2019)",
+      "hindi_url": "https://www.youtube.com/watch?v=kzxc_0YJAAw",
+      "english_url": "https://www.youtube.com/watch?v=mw5VIEIvuMI",
+      "notes": "Hindi: 2019 live-action Hindi video. English: Naomi Scott official. Power ballad."
+    },
+    {
+      "name": "hakuna_matata_lion_king",
+      "title": "Hakuna Matata — The Lion King (1994)",
+      "hindi_url": "https://www.youtube.com/watch?v=G2RPdUDWhBg",
+      "english_url": "https://www.youtube.com/watch?v=nbY_aP-alkw",
+      "notes": "Hindi: official soundtrack. English: 1994 original."
+    },
+    {
+      "name": "circle_of_life_lion_king",
+      "title": "Circle of Life — The Lion King (1994)",
+      "hindi_url": "https://www.youtube.com/watch?v=FfqF1vadU90",
+      "english_url": "https://www.youtube.com/watch?v=GibiNy4d4gc",
+      "notes": "Hindi: subs+trans. English: Carmen Twillie + Lebo M. Choral."
+    },
+    {
+      "name": "i_just_cant_wait_to_be_king_lion_king",
+      "title": "I Just Can't Wait to Be King — The Lion King (1994)",
+      "hindi_url": "https://www.youtube.com/watch?v=if2M6MbWTGI",
+      "english_url": "https://www.youtube.com/watch?v=l8UFnc85-xM",
+      "notes": "Hindi: subs+trans. English: Disney sing-along. Upbeat, young Simba."
+    },
+    {
+      "name": "can_you_feel_the_love_tonight_lion_king",
+      "title": "Can You Feel the Love Tonight — The Lion King (1994/2019)",
+      "hindi_url": "https://www.youtube.com/watch?v=RR9x_YizThA",
+      "english_url": "https://www.youtube.com/watch?v=25QyCxVkXwQ",
+      "notes": "Hindi: 2019 version (Armaan Malik + Sunidhi Chauhan). English: 1994 animated. Duet."
+    },
+    {
+      "name": "be_prepared_lion_king",
+      "title": "Be Prepared — The Lion King (1994)",
+      "hindi_url": "https://www.youtube.com/watch?v=3QSahNhpBvE",
+      "english_url": "https://www.youtube.com/watch?v=zPUe7O3ODHQ",
+      "notes": "Hindi: 1994 dub. English: Disney sing-along. Scar's villain song."
+    },
+    {
+      "name": "bare_necessities_jungle_book",
+      "title": "The Bare Necessities — The Jungle Book (1967/2016)",
+      "hindi_url": "https://www.youtube.com/watch?v=7EQA9o4fgiQ",
+      "english_url": "https://www.youtube.com/watch?v=6BH-Rxd-NBo",
+      "notes": "Hindi: 2016 theatrical. English: Phil Harris sing-along."
+    },
+    {
+      "name": "colors_of_the_wind_pocahontas",
+      "title": "Colors of the Wind — Pocahontas (1995)",
+      "hindi_url": "https://www.youtube.com/watch?v=AbEdd_hi2OU",
+      "english_url": "https://www.youtube.com/watch?v=O9MvdMqKvpU",
+      "notes": "Hindi: classic dub. English: Disney sing-along."
+    },
+    {
+      "name": "reflection_mulan",
+      "title": "Reflection — Mulan (1998/2020)",
+      "hindi_url": "https://www.youtube.com/watch?v=Z2AMEZDrKu0",
+      "english_url": "https://www.youtube.com/watch?v=lGGXsm0a5s0",
+      "notes": "Hindi: Sunayana Sarkar 'Parchhaai'. English: Disney sing-along."
+    },
+    {
+      "name": "ill_make_a_man_out_of_you_mulan",
+      "title": "I'll Make a Man Out of You — Mulan (1998)",
+      "hindi_url": "https://www.youtube.com/watch?v=-oHNYHU9oIs",
+      "english_url": "https://www.youtube.com/watch?v=TVcLIfSC4OE",
+      "notes": "Hindi: Disney India dub. English: Donny Osmond. Training montage."
+    },
+    {
+      "name": "under_the_sea_little_mermaid",
+      "title": "Under the Sea — The Little Mermaid (1989)",
+      "hindi_url": "https://www.youtube.com/watch?v=ePVgiBvg_vM",
+      "english_url": "https://www.youtube.com/watch?v=GC_mV1IpjWA",
+      "notes": "Hindi: Vishwajeet Mukherjee 'Samundar Mein'. English: official. Fast-paced."
+    },
+    {
+      "name": "part_of_your_world_little_mermaid",
+      "title": "Part of Your World — The Little Mermaid (1989)",
+      "hindi_url": "https://www.youtube.com/watch?v=JXH5b0X3Gcs",
+      "english_url": "https://www.youtube.com/watch?v=SXKlJuO07eM",
+      "notes": "Hindi: Chandreyee Bhattacharya. English: Jodi Benson original."
+    },
+    {
+      "name": "be_our_guest_beauty_beast",
+      "title": "Be Our Guest — Beauty and the Beast (1991)",
+      "hindi_url": "https://www.youtube.com/watch?v=D1OjYqzBdJs",
+      "english_url": "https://www.youtube.com/watch?v=afzmwAKUppU",
+      "notes": "Hindi: classic dub. English: original animated. Show-tune."
+    },
+    {
+      "name": "beauty_and_the_beast_title",
+      "title": "Beauty and the Beast (Title Song) — Beauty and the Beast (1991)",
+      "hindi_url": "https://www.youtube.com/watch?v=5Z9w3nEcwjE",
+      "english_url": "https://www.youtube.com/watch?v=Q5i-JtII7ng",
+      "notes": "Hindi: Smita Malhotra. English: 'Tale as Old as Time' theme. Romantic ballad."
+    },
+    {
+      "name": "something_there_beauty_beast",
+      "title": "Something There — Beauty and the Beast (1991)",
+      "hindi_url": "https://www.youtube.com/watch?v=uxe4FTj29bc",
+      "english_url": "https://www.youtube.com/watch?v=yMgNTmowGR4",
+      "notes": "Hindi: classic dub. English: bonding-montage song. Several short character verses."
+    },
+    {
+      "name": "how_far_ill_go_moana",
+      "title": "How Far I'll Go — Moana (2016)",
+      "hindi_url": "https://www.youtube.com/watch?v=uW0MdRCA4bA",
+      "english_url": "https://www.youtube.com/watch?v=cPAbx5kgCJo",
+      "notes": "Hindi: Shruti Rane 'Manzil Hai Jo'. English: Auli'i Cravalho."
+    },
+    {
+      "name": "youre_welcome_moana",
+      "title": "You're Welcome — Moana (2016)",
+      "hindi_url": "https://www.youtube.com/watch?v=z_XbDV5U_WA",
+      "english_url": "https://www.youtube.com/watch?v=79DijItQXMM",
+      "notes": "Hindi: Shamit Tyagi 'Tathastu'. English: Dwayne Johnson. Rap-like."
+    },
+    {
+      "name": "where_you_are_moana",
+      "title": "Where You Are — Moana (2016)",
+      "hindi_url": "https://www.youtube.com/watch?v=8VY5KZPaCbs",
+      "english_url": "https://www.youtube.com/watch?v=RTWhvp_OD6s",
+      "notes": "Hindi: dubbed version. English: sing-along. Ensemble village song."
+    },
+    {
+      "name": "shiny_moana",
+      "title": "Shiny — Moana (2016)",
+      "hindi_url": "https://www.youtube.com/watch?v=C-Lj5Ua2HRo",
+      "english_url": "https://www.youtube.com/watch?v=93lrosBEW-Q",
+      "notes": "Hindi: movie version. English: Jemaine Clement as Tamatoa. Villain song."
+    },
+    {
+      "name": "we_know_the_way_moana",
+      "title": "We Know the Way — Moana (2016)",
+      "hindi_url": "https://www.youtube.com/watch?v=YkUNlLQJsDw",
+      "english_url": "https://www.youtube.com/watch?v=ubZrAmRxy_M",
+      "notes": "Hindi: Disney India dub. English: Lin-Manuel Miranda + Opetaia Foa'i. Partly Tokelauan."
+    },
+    {
+      "name": "remember_me_coco",
+      "title": "Remember Me — Coco (2017)",
+      "hindi_url": "https://www.youtube.com/watch?v=7uhxoQNb5pA",
+      "english_url": "https://www.youtube.com/watch?v=KP_XkN2v7OM",
+      "notes": "Hindi: 'Na Bhoolana' lullaby. English: lullaby sing-along."
+    },
+    {
+      "name": "world_es_mi_familia_coco",
+      "title": "The World Es Mi Familia — Coco (2017)",
+      "hindi_url": "https://www.youtube.com/watch?v=oiyawqHHpzA",
+      "english_url": "https://www.youtube.com/watch?v=4LhIen5ALww",
+      "notes": "Hindi: official HQ dub. English: Anthony Gonzalez + Antonio Sol. Energetic stage performance."
+    },
+    {
+      "name": "i_see_the_light_tangled",
+      "title": "I See the Light — Tangled (2010)",
+      "hindi_url": "https://www.youtube.com/watch?v=rmJR8KvIY9s",
+      "english_url": "https://www.youtube.com/watch?v=ILRs2r6lcHY",
+      "notes": "Hindi: subs+trans. English: Mandy Moore + Zachary Levi. Duet."
+    },
+    {
+      "name": "when_will_my_life_begin_tangled",
+      "title": "When Will My Life Begin — Tangled (2010)",
+      "hindi_url": "https://www.youtube.com/watch?v=2SrVPSAcvT0",
+      "english_url": "https://www.youtube.com/watch?v=kRXmAIHYQR4",
+      "notes": "Hindi: 'Meri Zindagi' full song. English: Mandy Moore sing-along."
+    },
+    {
+      "name": "mother_knows_best_tangled",
+      "title": "Mother Knows Best — Tangled (2010)",
+      "hindi_url": "https://www.youtube.com/watch?v=zY1OxnvBl5k",
+      "english_url": "https://www.youtube.com/watch?v=-7jWt3JvJto",
+      "notes": "Hindi: 'Maa Sab Janti Hai'. English: Donna Murphy sing-along. Villain song."
+    },
+    {
+      "name": "we_dont_talk_about_bruno_encanto",
+      "title": "We Don't Talk About Bruno — Encanto (2021)",
+      "hindi_url": "https://www.youtube.com/watch?v=fW2ejyDYPFk",
+      "english_url": "https://www.youtube.com/watch?v=bvWRMAU6V-c",
+      "notes": "Hindi: subs+trans. English: official. Multi-voice, complex structure."
+    },
+    {
+      "name": "waiting_on_a_miracle_encanto",
+      "title": "Waiting on a Miracle — Encanto (2021)",
+      "hindi_url": "https://www.youtube.com/watch?v=lWRA8I43k9w",
+      "english_url": "https://www.youtube.com/watch?v=fCYCGh4-bGM",
+      "notes": "Hindi: Riya Duggal 'Ek Karishma'. English: Stephanie Beatriz. Solo, emotional."
+    },
+    {
+      "name": "surface_pressure_encanto",
+      "title": "Surface Pressure — Encanto (2021)",
+      "hindi_url": "https://www.youtube.com/watch?v=6PEHWLwKPlE",
+      "english_url": "https://www.youtube.com/watch?v=tQwVKr8rCYw",
+      "notes": "Hindi: Disney India dub. English: Jessica Darrow as Luisa. Fast-paced."
+    },
+    {
+      "name": "all_of_you_encanto",
+      "title": "All of You — Encanto (2021)",
+      "hindi_url": "https://www.youtube.com/watch?v=VwY08ktbF2E",
+      "english_url": "https://www.youtube.com/watch?v=hrMxx8EV4JU",
+      "notes": "Hindi: Disney India dub. English: finale ensemble. Multi-voice, complex — verify alignment carefully."
+    },
+    {
+      "name": "what_else_can_i_do_encanto",
+      "title": "What Else Can I Do? — Encanto (2021)",
+      "hindi_url": "https://www.youtube.com/watch?v=i2jVGBq3GnI",
+      "english_url": "https://www.youtube.com/watch?v=PnJY20UCH9c",
+      "notes": "Hindi: Disney India dub. English: Diane Guerrero + Stephanie Beatriz. Isabela + Mirabel duet."
+    }
+  ]
+}

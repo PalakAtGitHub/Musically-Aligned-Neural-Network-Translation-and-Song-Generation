@@ -1,0 +1,136 @@
+[
+  {
+    "song_name": "let_it_go_frozen",
+    "status": "partial",
+    "num_examples": 9,
+    "error": "",
+    "flags": [
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": -1,
+        "flag_type": "line_count_mismatch",
+        "severity": "warning",
+        "message": "Hindi has 11 segs vs English 38 (ratio 0.29) — may need manual alignment",
+        "english_text": "",
+        "hindi_text": ""
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 5,
+        "flag_type": "no_english_match",
+        "severity": "warning",
+        "message": "Hindi line 5 has no good English match (best overlap: 0.00s)",
+        "english_text": "",
+        "hindi_text": "बादा"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 7,
+        "flag_type": "no_english_match",
+        "severity": "warning",
+        "message": "Hindi line 7 has no good English match (best overlap: 0.26s)",
+        "english_text": "",
+        "hindi_text": "बादा"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": -1,
+        "flag_type": "many_unmatched_english",
+        "severity": "warning",
+        "message": "29/38 English lines unmatched",
+        "english_text": "",
+        "hindi_text": ""
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 0,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 9.11 (notes=82, hi_syl=9)",
+        "english_text": "Well now they know.",
+        "hindi_text": "पेरा ये जा नरूके तुपा"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 1,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 5.86 (notes=82, hi_syl=14)",
+        "english_text": "Turn away and slam a door.",
+        "hindi_text": "भर्वीडी ती उ मेरी पे कि अगर जा दा"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 2,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 6.31 (notes=82, hi_syl=13)",
+        "english_text": "I don't care what they're going to say.",
+        "hindi_text": "बाथा दर पे लाजे नचे से तंगा दा"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 3,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 8.20 (notes=82, hi_syl=10)",
+        "english_text": "Let the storm rage on.",
+        "hindi_text": "नहम विड के तेग बूना"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 4,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 10.25 (notes=82, hi_syl=8)",
+        "english_text": "Cole never bothered me anyway.",
+        "hindi_text": "नह कर कर जोना"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 5,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 9.11 (notes=82, hi_syl=9)",
+        "english_text": "It's funny how some distance makes everything seem small.",
+        "hindi_text": "बूमे सुरज भूजला सा"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 6,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 10.25 (notes=82, hi_syl=8)",
+        "english_text": "It's time to see what I can do to test the limits",
+        "hindi_text": "पे जा नर शनी बावा"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 7,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 16.40 (notes=82, hi_syl=5)",
+        "english_text": "No light, no rope, no rules for me.",
+        "hindi_text": "नरुके तुपा"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 8,
+        "flag_type": "syllable_ratio",
+        "severity": "warning",
+        "message": "Syllable ratio 3.67 (en=3, hi=11) — may not be singable",
+        "english_text": "I'm free.",
+        "hindi_text": "दरने ही पर पेली डातूका"
+      },
+      {
+        "song_name": "let_it_go_frozen",
+        "line_index": 8,
+        "flag_type": "melody_coverage",
+        "severity": "warning",
+        "message": "Notes/syllables ratio 7.64 (notes=84, hi_syl=11)",
+        "english_text": "I'm free.",
+        "hindi_text": "दरने ही पर पेली डातूका"
+      }
+    ]
+  }
+]
